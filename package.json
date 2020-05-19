@@ -1,0 +1,25 @@
+{
+  "name": "dombee",
+  "version": "0.1.0",
+  "description": "Your API for custom 2-way-binding",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bassdman/dombee.git"
+  },
+  "keywords": [
+    "dombee",
+    "dom",
+    "2-way-binding",
+    "2waybinding"
+  ],
+  "author": "Manuel Gelsen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bassdman/dombee/issues"
+  },
+  "homepage": "https://github.com/bassdman/dombee#readme"
+}
