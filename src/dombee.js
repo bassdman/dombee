@@ -1,35 +1,34 @@
-import { registerDirective, Dombee } from './dombee-core.js';
+import { directive, Dombee } from './dombee-core.js';
 
 
 
 
-registerDirective(function onRenderInputElementCheckboxes() {
-    return {
-        bindTo: 'input[data-model][type="checkbox"]',
-        computations: elem => elem.dataset.model,
-        onRender(elem, result, { property, value }) {
-            if (value)
-                elem.setAttribute('checked', 'checked');
-            else
-                elem.removeAttribute('checked');
-        },
-    }
+directive({
+    name: 'inputElementCheckboxes',
+    bindTo: 'input[data-model][type="checkbox"]',
+    expressions: elem => elem.dataset.model,
+    onRender(elem, result, { property, value }) {
+        if (value)
+            elem.setAttribute('checked', 'checked');
+        else
+            elem.removeAttribute('checked');
+    },
 });
 
-registerDirective(function onRenderInputElementDefault() {
+directive(function onRenderInputElementDefault() {
     return {
         bindTo: '[data-model]:not([type="radio"])',
-        computations: elem => elem.dataset.model,
+        expressions: elem => elem.dataset.model,
         onRender(elem, result, { property, value }) {
             elem.value = value;
         },
     }
 });
 
-registerDirective(function onRenderInputElementRadios() {
+directive(function onRenderInputElementRadios() {
     return {
         bindTo: 'input[data-model][type="radio"]',
-        computations: elem => elem.dataset.model,
+        expressions: elem => elem.dataset.model,
         onRender(elem, result, { property, value }) {
             if (elem.value == value)
                 elem.setAttribute('checked', 'checked');
@@ -37,19 +36,19 @@ registerDirective(function onRenderInputElementRadios() {
     }
 });
 
-registerDirective(function onRenderDataBind() {
+directive(function onRenderDataBind() {
     return {
         bindTo: '[data-bind]',
-        computations: elem => elem.dataset.bind,
+        expressions: elem => elem.dataset.bind,
         onRender(elem, result, state) {
             elem.innerHTML = result;
         },
     }
 });
 
-registerDirective(function onRenderDataClass() {
+directive(function onRenderDataClass() {
     return {
-        computations: elem => elem.dataset.class,
+        expressions: elem => elem.dataset.class,
         bindTo: '[data-class]',
         onRender(elem, result, state) {
             if (typeof result == 'object') {
@@ -67,10 +66,10 @@ registerDirective(function onRenderDataClass() {
     }
 });
 
-registerDirective(function onRenderDataStyle() {
+directive(function onRenderDataStyle() {
     return {
         bindTo: '[data-style]',
-        computations: elem => elem.dataset.style,
+        expressions: elem => elem.dataset.style,
         onRender(elem, result, state) {
             if (typeof result == 'object') {
                 Object.keys(result).forEach(key => {
@@ -83,7 +82,7 @@ registerDirective(function onRenderDataStyle() {
     }
 });
 
-registerDirective(function onRenderStyleXyz() {
+directive(function onRenderStyleXyz() {
     return {
         bindTo: () => {
             return Array.from(document.querySelectorAll('*')).filter(elem => {
@@ -91,10 +90,10 @@ registerDirective(function onRenderStyleXyz() {
                 return hasStyleKey;
             });
         },
-        computations: elem => {
-            const computations = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
-            console.log(computations);
-            return computations;
+        expressions: elem => {
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
+            console.log(expressions);
+            return expressions;
         },
         onRender(elem, result, { property }) {
             elem.style[property] = result;
@@ -102,7 +101,7 @@ registerDirective(function onRenderStyleXyz() {
     }
 });
 
-registerDirective(function onRenderClassXyz() {
+directive(function onRenderClassXyz() {
     const boundElements = Array.from(document.querySelectorAll('*')).filter(elem => {
         const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).length > 0;
         return hasClassKey;
@@ -110,15 +109,15 @@ registerDirective(function onRenderClassXyz() {
 
     return {
         bindTo: boundElements,
-        computations: elem => {
-            const computations = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).map(key => {
+        expressions: elem => {
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).map(key => {
                 return {
                     computation: elem.dataset[key],
                     classname: key.replace('class.', '')
                 }
             });
-            console.log(computations);
-            return computations;
+            console.log(expressions);
+            return expressions;
         },
         onRender(elem, result, { property, value, computation }) {
             if (result)
@@ -129,7 +128,7 @@ registerDirective(function onRenderClassXyz() {
     }
 });
 
-registerDirective(function addDataModelEvents({ state }) {
+directive(function addDataModelEvents({ data, state }) {
     const allInputsNoCheckbox = document.querySelectorAll('[data-model]:not([type="checkbox"])');
     const allCheckboxex = document.querySelectorAll('input[data-model][type="checkbox"]');
 
@@ -153,10 +152,10 @@ registerDirective(function addDataModelEvents({ state }) {
     }
 });
 
-registerDirective(function onRenderDataShow() {
+directive(function onRenderDataShow() {
     return {
         bindTo: 'data-show',
-        computations: elem => elem.dataset.show,
+        expressions: elem => elem.dataset.show,
         onRender(elem, result) {
             elem.style.display = result ? 'block' : 'none';
         },

@@ -1,5 +1,5 @@
 const globalCache = {
-    onInit: []
+    directives: []
 }
 
 function Dombee(_state = {}) {
@@ -62,8 +62,8 @@ function Dombee(_state = {}) {
         }
     }
 
-    function addDependencies(computationResult, name, elemid, keyprefix = "", bindingFn, ) {
-        const fnText = computationResult.computation ? computationResult.computation.toString() : computationResult.toString();
+    function addDependencies(expressionResult, name, elemid, keyprefix = "", bindingFn, ) {
+        const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
         Object.keys(state).forEach(key => {
             if (!fnText.match(new RegExp("\\b" + keyprefix + key + "\\b")))
                 return;
@@ -79,9 +79,9 @@ function Dombee(_state = {}) {
                     elemid,
                     name,
                     bindingFn,
-                    resultFn: toFn(computationResult.computation ? computationResult.computation : computationResult),
-                    resultFnRaw: computationResult.computation ? computationResult.computation : computationResult,
-                    computation: computationResult
+                    resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult),
+                    resultFnRaw: expressionResult.expression ? expressionResult.expression : expressionResult,
+                    expression: expressionResult
                 }
             }
         });
@@ -120,12 +120,13 @@ function Dombee(_state = {}) {
             watched[key] = fn;
     }
 
-    for (let initFn of globalCache.onInit) {
-        const result = initFn({ state, compute }) || {};
 
-        if (result.onRender) {
-            const initName = result.name || initFn.name;
-            const elements = initElements(result.bindTo);
+    for (let _directive of globalCache.directives) {
+        let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
+        directive = Object.assign({ name: _directive.name }, directive);
+
+        if (directive.onRender) {
+            const elements = initElements(directive.bindTo);
 
             for (let elem of elements) {
                 const elemId = elem.dataset.id || randomId('id_');
@@ -133,12 +134,12 @@ function Dombee(_state = {}) {
                 if (elem.dataset.id == null)
                     elem.dataset.id = elemId;
 
-                let computations = result.computations(elem);
-                if (!Array.isArray(computations))
-                    computations = [computations];
+                let expressions = directive.expressions(elem);
+                if (!Array.isArray(expressions))
+                    expressions = [expressions];
 
-                for (let computation of computations) {
-                    addDependencies(computation, 0, elemId, "", result.onRender);
+                for (let expression of expressions) {
+                    addDependencies(expression, 0, elemId, "", directive.onRender);
                 }
 
             }
@@ -153,7 +154,7 @@ function Dombee(_state = {}) {
             const result = compute(cacheUpdateEntry.resultFn);
 
             if (cacheUpdateEntry.bindingFn)
-                cacheUpdateEntry.bindingFn(elem, result, { values, property: prop, value, computation: cacheUpdateEntry.computation });
+                cacheUpdateEntry.bindingFn(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
         }
     };
 
@@ -192,9 +193,9 @@ function initElements(_elements) {
     return [elements];
 }
 
-function registerDirective(fn) {
-    if (fn)
-        globalCache.onInit.push(fn);
+function directive(config) {
+
+    globalCache.directives.push(config);
 }
 
-export { Dombee, registerDirective };
+export { Dombee, directive };
