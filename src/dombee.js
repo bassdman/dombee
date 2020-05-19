@@ -165,3 +165,4 @@ directive(function onRenderDataShow() {
 /* Ende Der Bereich wird ausgelagert
  */
 export default Dombee;
+window.Dombee = Dombee;
