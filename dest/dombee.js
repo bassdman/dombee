@@ -125,7 +125,7 @@
             let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
             directive = Object.assign({ name: _directive.name }, directive);
 
-            if (directive.onRender) {
+            if (directive.onChange) {
                 const elements = initElements(directive.bindTo);
 
                 for (let elem of elements) {
@@ -139,7 +139,7 @@
                         expressions = [expressions];
 
                     for (let expression of expressions) {
-                        addDependencies(expression, 0, elemId, "", directive.onRender);
+                        addDependencies(expression, 0, elemId, "", directive.onChange);
                     }
 
                 }
@@ -201,7 +201,7 @@
         name: 'inputElementCheckboxes',
         bindTo: 'input[data-model][type="checkbox"]',
         expressions: elem => elem.dataset.model,
-        onRender(elem, result, { property, value }) {
+        onChange(elem, result, { property, value }) {
             if (value)
                 elem.setAttribute('checked', 'checked');
             else
@@ -213,7 +213,7 @@
         return {
             bindTo: '[data-model]:not([type="radio"])',
             expressions: elem => elem.dataset.model,
-            onRender(elem, result, { property, value }) {
+            onChange(elem, result, { property, value }) {
                 elem.value = value;
             },
         }
@@ -223,7 +223,7 @@
         return {
             bindTo: 'input[data-model][type="radio"]',
             expressions: elem => elem.dataset.model,
-            onRender(elem, result, { property, value }) {
+            onChange(elem, result, { property, value }) {
                 if (elem.value == value)
                     elem.setAttribute('checked', 'checked');
             },
@@ -234,7 +234,7 @@
         return {
             bindTo: '[data-bind]',
             expressions: elem => elem.dataset.bind,
-            onRender(elem, result, state) {
+            onChange(elem, result, state) {
                 elem.innerHTML = result;
             },
         }
@@ -244,7 +244,7 @@
         return {
             expressions: elem => elem.dataset.class,
             bindTo: '[data-class]',
-            onRender(elem, result, state) {
+            onChange(elem, result, state) {
                 if (typeof result == 'object') {
                     Object.keys(result).forEach(key => {
                         const hasClass = result[key];
@@ -264,7 +264,7 @@
         return {
             bindTo: '[data-style]',
             expressions: elem => elem.dataset.style,
-            onRender(elem, result, state) {
+            onChange(elem, result, state) {
                 if (typeof result == 'object') {
                     Object.keys(result).forEach(key => {
                         elem.style[key] = result[key];
@@ -289,7 +289,7 @@
                 console.log(expressions);
                 return expressions;
             },
-            onRender(elem, result, { property }) {
+            onChange(elem, result, { property }) {
                 elem.style[property] = result;
             },
         }
@@ -313,7 +313,7 @@
                 console.log(expressions);
                 return expressions;
             },
-            onRender(elem, result, { property, value, computation }) {
+            onChange(elem, result, { property, value, computation }) {
                 if (result)
                     elem.classList.add(computation.classname);
                 else
@@ -350,7 +350,7 @@
         return {
             bindTo: 'data-show',
             expressions: elem => elem.dataset.show,
-            onRender(elem, result) {
+            onChange(elem, result) {
                 elem.style.display = result ? 'block' : 'none';
             },
         }

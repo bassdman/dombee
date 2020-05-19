@@ -7,7 +7,7 @@ directive({
     name: 'inputElementCheckboxes',
     bindTo: 'input[data-model][type="checkbox"]',
     expressions: elem => elem.dataset.model,
-    onRender(elem, result, { property, value }) {
+    onChange(elem, result, { property, value }) {
         if (value)
             elem.setAttribute('checked', 'checked');
         else
@@ -19,7 +19,7 @@ directive(function onRenderInputElementDefault() {
     return {
         bindTo: '[data-model]:not([type="radio"])',
         expressions: elem => elem.dataset.model,
-        onRender(elem, result, { property, value }) {
+        onChange(elem, result, { property, value }) {
             elem.value = value;
         },
     }
@@ -29,7 +29,7 @@ directive(function onRenderInputElementRadios() {
     return {
         bindTo: 'input[data-model][type="radio"]',
         expressions: elem => elem.dataset.model,
-        onRender(elem, result, { property, value }) {
+        onChange(elem, result, { property, value }) {
             if (elem.value == value)
                 elem.setAttribute('checked', 'checked');
         },
@@ -40,7 +40,7 @@ directive(function onRenderDataBind() {
     return {
         bindTo: '[data-bind]',
         expressions: elem => elem.dataset.bind,
-        onRender(elem, result, state) {
+        onChange(elem, result, state) {
             elem.innerHTML = result;
         },
     }
@@ -50,7 +50,7 @@ directive(function onRenderDataClass() {
     return {
         expressions: elem => elem.dataset.class,
         bindTo: '[data-class]',
-        onRender(elem, result, state) {
+        onChange(elem, result, state) {
             if (typeof result == 'object') {
                 Object.keys(result).forEach(key => {
                     const hasClass = result[key];
@@ -70,7 +70,7 @@ directive(function onRenderDataStyle() {
     return {
         bindTo: '[data-style]',
         expressions: elem => elem.dataset.style,
-        onRender(elem, result, state) {
+        onChange(elem, result, state) {
             if (typeof result == 'object') {
                 Object.keys(result).forEach(key => {
                     elem.style[key] = result[key];
@@ -95,7 +95,7 @@ directive(function onRenderStyleXyz() {
             console.log(expressions);
             return expressions;
         },
-        onRender(elem, result, { property }) {
+        onChange(elem, result, { property }) {
             elem.style[property] = result;
         },
     }
@@ -119,7 +119,7 @@ directive(function onRenderClassXyz() {
             console.log(expressions);
             return expressions;
         },
-        onRender(elem, result, { property, value, computation }) {
+        onChange(elem, result, { property, value, computation }) {
             if (result)
                 elem.classList.add(computation.classname)
             else
@@ -156,13 +156,11 @@ directive(function onRenderDataShow() {
     return {
         bindTo: 'data-show',
         expressions: elem => elem.dataset.show,
-        onRender(elem, result) {
+        onChange(elem, result) {
             elem.style.display = result ? 'block' : 'none';
         },
     }
 });
 
-/* Ende Der Bereich wird ausgelagert
- */
 export default Dombee;
 window.Dombee = Dombee;

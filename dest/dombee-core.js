@@ -125,7 +125,7 @@
             let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
             directive = Object.assign({ name: _directive.name }, directive);
 
-            if (directive.onRender) {
+            if (directive.onChange) {
                 const elements = initElements(directive.bindTo);
 
                 for (let elem of elements) {
@@ -139,7 +139,7 @@
                         expressions = [expressions];
 
                     for (let expression of expressions) {
-                        addDependencies(expression, 0, elemId, "", directive.onRender);
+                        addDependencies(expression, 0, elemId, "", directive.onChange);
                     }
 
                 }
