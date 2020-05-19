@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Manus 2waybinding</title>
+    <meta charset="UTF-8" />
+</head>
+
+<body>
+    <main class="main">
+        <h1 data-bind="header.headtitle"></h1>
+        <div class="field">
+            <label for="name">Enter your first name:</label>
+            <input id="name" type="text" name="name" data-model="vorname" />
+            <label for="name">Enter your last name:</label>
+            <input id="name" type="text" name="name" data-model="nachname" />
+            <label for="name">Enter your margin:</label>
+            <input id="name" type="number" name="margin" data-model="margin" />
+        </div>
+
+        <div class="field">
+            <label for="title">Enter your title:</label>
+            <input id="title" type="text" name="title" data-model="title" />
+            <input type="checkbox" data-model="yesno"> <span data-bind="yesno"></span>
+        </div>
+
+        <div class="field">
+            <label for="title">What do you want to select????:</label>
+            <label>Auto: <input type="radio" name="title" data-model="thing" value="auto" /></label>
+            <label>Buch: <input type="radio" name="title" data-model="thing" value="buch" /></label>
+        </div>
+
+        <div class="results">
+            <h1 data-bind="name"></h1>
+            <h2 data-bind="title"></h2>
+            <h2 data-bind="thing" data-class="{abc:yesno}" data-style="{opacity: opacity + '%'}"></h2>
+            <h3 data-show="yesno" data-class="abc def ${classnames}" data-class.xyz="yesno" data-style="margin-left: ${margin}px;" data-style.opacity="${opacity}%">Wird nur bedingt angezeigt</h3>
+            <div data-bind="nested.nested2"></div>
+        </div>
+
+        <h3 data-class.xyz="yesno" data-class.abc="opacity == 0">Doubleclassbinding</h3>
+    </main>
+
+    <script type="module">
+        import Dombee from './src/dombee.js'; window.Dombee = Dombee;
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            window.bindings = new Dombee({
+                yesno: false,
+                thing: 'auto',
+                vorname: 'Peter',
+                nachname: 'Hauenstein',
+                margin: 0,
+                nested: {
+                    nested2: false
+                },
+                opacity(state) {
+                    return 100 - state.margin;
+                },
+                name: function(state) {
+                    return state.vorname + ' ' + state.nachname
+                },
+                classnames: function(state) {
+                    return state.vorname.toLowerCase();
+                },
+                header: {
+                    headtitle: "headtitle"
+                },
+                title: 'HelloWorld!'
+            });
+        });
+    </script>
+</body>
+
+</html>
