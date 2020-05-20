@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "npm run build_default;npm run build_core;",
+        "build": "rollup --config",
         "build_default": "rollup src/dombee.js --file dest/dombee.js --format iife;minify dest/dombee.js > dest/dombee.min.js;",
         "build_core": "rollup src/dombee-core.js --file dest/dombee-core.js --format iife;minify dest/dombee-core.js > dest/dombee-core.min.js;"
     },
@@ -27,7 +27,7 @@
     "homepage": "https://github.com/bassdman/dombee#readme",
     "dependencies": {},
     "devDependencies": {
-        "minify": "^5.1.1",
-        "rollup": "^2.10.5"
+        "rollup": "^2.10.5",
+        "rollup-plugin-terser": "^5.3.0"
     }
 }

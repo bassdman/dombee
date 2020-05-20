@@ -41,10 +41,10 @@
         <h3 data-class.xyz="yesno" data-class.abc="opacity == 0">Doubleclassbinding</h3>
     </main>
 
-    <script src="dest/dombee.js">
-        //   import Dombee from './src/dombee.js';
-        // window.Dombee = Dombee;
+    <script type="module">
+        import Dombee from './src/dombee.js'; window.Dombee = Dombee;
     </script>
+    <!-- <script src="./dest/dombee.js"></script>-->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             window.bindings = new Dombee({

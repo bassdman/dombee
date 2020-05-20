@@ -1,4 +1,4 @@
-(function () {
+var Dombee = (function () {
     'use strict';
 
     const globalCache = {
@@ -355,7 +355,6 @@
             },
         }
     });
-    window.Dombee = Dombee;
 
     return Dombee;
 

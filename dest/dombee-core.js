@@ -1,4 +1,4 @@
-(function (exports) {
+var Dombee = (function (exports) {
     'use strict';
 
     const globalCache = {

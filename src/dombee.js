@@ -163,4 +163,3 @@ directive(function onRenderDataShow() {
 });
 
 export default Dombee;
-window.Dombee = Dombee;
