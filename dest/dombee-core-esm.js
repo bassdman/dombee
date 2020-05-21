@@ -1,11 +1,15 @@
-import { defaultDependencyEvaluationStrategy } from "./defaults.js";
+function defaultDependencyEvaluationStrategy(fn, state) {
+    const fnText = typeof fn == 'function' ? fn.toString() : fn;
+    return Object.keys(state).filter(key => {
+        return fnText.match(new RegExp("\\b" + key + "\\b"));
+    });
+}
 
 const globalCache = {
     directives: []
-}
+};
 
 function Dombee(_state = {}) {
-    const watched = {};
 
     const cache = {
         bindings: {},
@@ -69,7 +73,7 @@ function Dombee(_state = {}) {
                 const fn = Function(...paramKeys, codeString);
                 return fn;
             } catch (e) {
-                console.log('code can not be parsed', codeNonString)
+                console.log('code can not be parsed', codeNonString);
             }
 
         }
@@ -96,10 +100,9 @@ function Dombee(_state = {}) {
                     resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult),
                     resultFnRaw: expressionResult.expression ? expressionResult.expression : expressionResult,
                     expression: expressionResult
-                }
+                };
             }
-        };
-    }
+        }    }
 
 
     function values(parsable) {
@@ -130,8 +133,6 @@ function Dombee(_state = {}) {
     }
 
     function watch(key, fn) {
-        if (!watched[key])
-            watched[key] = fn;
     }
 
     const evaluationStrategy = getDependencyEvaluationStrategy(state);
@@ -178,7 +179,7 @@ function Dombee(_state = {}) {
             addDependencies(state[key], key, 0, evaluationStrategy);
         }
 
-        render(state, key, state[key])
+        render(state, key, state[key]);
     });
 
     return {
@@ -187,8 +188,7 @@ function Dombee(_state = {}) {
         watch,
         cache
     }
-};
-
+}
 function initElements(_elements) {
     let elements = _elements;
 
@@ -220,4 +220,4 @@ Dombee.directive = directive;
 Dombee.defaultDependencyEvaluationStrategy = defaultDependencyEvaluationStrategy;
 Dombee.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
 
-export { Dombee, directive, defaultDependencyEvaluationStrategy as defaultDependencyRecognitionStrategy, dependencyEvaluationStrategy };
+export { Dombee, defaultDependencyEvaluationStrategy as defaultDependencyRecognitionStrategy, dependencyEvaluationStrategy, directive };

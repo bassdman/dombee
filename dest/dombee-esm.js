@@ -1,3 +1,10 @@
+function defaultDependencyEvaluationStrategy(fn, state) {
+    const fnText = typeof fn == 'function' ? fn.toString() : fn;
+    return Object.keys(state).filter(key => {
+        return fnText.match(new RegExp("\\b" + key + "\\b"));
+    });
+}
+
 const globalCache = {
     directives: []
 };
@@ -30,6 +37,17 @@ function Dombee(_state = {}) {
         }
     });
 
+    function getDependencyEvaluationStrategy(state) {
+        try {
+            dependencyEvaluationStrategy(function() {}, state);
+            return dependencyEvaluationStrategy();
+        } catch (e) {
+            if (e == 'nostrategy')
+                return defaultDependencyEvaluationStrategy;
+            return dependencyEvaluationStrategy;
+        }
+    }
+
     function compute(text = '') {
         const _values = values();
         const paramValues = Object.keys(_values).map(key => _values[key]);
@@ -61,11 +79,12 @@ function Dombee(_state = {}) {
         }
     }
 
-    function addDependencies(expressionResult, name, elemid, keyprefix = "", bindingFn, ) {
+    function addDependencies(expressionResult, name, elemid, evaluationStrategy, bindingFn, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
-        Object.keys(state).forEach(key => {
-            if (!fnText.match(new RegExp("\\b" + keyprefix + key + "\\b")))
-                return;
+
+        const dependencies = evaluationStrategy(fnText, state);
+
+        for (let key of dependencies) {
 
             if (!cache.dependencies[key]) {
                 cache.dependencies[key] = [];
@@ -83,8 +102,7 @@ function Dombee(_state = {}) {
                     expression: expressionResult
                 };
             }
-        });
-    }
+        }    }
 
 
     function values(parsable) {
@@ -117,6 +135,7 @@ function Dombee(_state = {}) {
     function watch(key, fn) {
     }
 
+    const evaluationStrategy = getDependencyEvaluationStrategy(state);
 
     for (let _directive of globalCache.directives) {
         let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
@@ -136,7 +155,7 @@ function Dombee(_state = {}) {
                     expressions = [expressions];
 
                 for (let expression of expressions) {
-                    addDependencies(expression, 0, elemId, "", directive.onChange);
+                    addDependencies(expression, 0, elemId, evaluationStrategy, directive.onChange);
                 }
 
             }
@@ -157,7 +176,7 @@ function Dombee(_state = {}) {
 
     Object.keys(state).forEach(key => {
         if (typeof state[key] == 'function') {
-            addDependencies(state[key], key);
+            addDependencies(state[key], key, 0, evaluationStrategy);
         }
 
         render(state, key, state[key]);
@@ -170,7 +189,6 @@ function Dombee(_state = {}) {
         cache
     }
 }
-
 function initElements(_elements) {
     let elements = _elements;
 
@@ -193,6 +211,14 @@ function directive(config) {
 
     globalCache.directives.push(config);
 }
+
+function dependencyEvaluationStrategy() {
+    throw 'nostrategy';
+}
+
+Dombee.directive = directive;
+Dombee.defaultDependencyEvaluationStrategy = defaultDependencyEvaluationStrategy;
+Dombee.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
 
 directive({
     name: 'inputElementCheckboxes',
