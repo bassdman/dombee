@@ -4,7 +4,8 @@
     "description": "Your API for custom 2-way-binding",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "pretest": "npm run build",
+        "test": "jasmine",
         "build": "rollup --config",
         "watch": "rollup --config --watch"
     },
@@ -26,6 +27,7 @@
     "homepage": "https://github.com/bassdman/dombee#readme",
     "dependencies": {},
     "devDependencies": {
+        "jasmine": "^3.5.0",
         "rollup": "^2.10.5",
         "rollup-plugin-terser": "^5.3.0"
     }

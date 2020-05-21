@@ -22,6 +22,10 @@ var Dombee = (function () {
         return fn;
     }
 
+    function randomId(prefix) {
+        return prefix + Math.random().toString(36).substring(2, 15);
+    }
+
     const globalCache = {
         directives: [],
         dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
@@ -38,10 +42,6 @@ var Dombee = (function () {
             bindings: {},
             dependencies: {}
         };
-
-        function randomId(prefix) {
-            return prefix + Math.random().toString(36).substring(2, 15);
-        }
 
         const state = new Proxy(_state, {
             set(target, property, value) {
@@ -210,9 +210,10 @@ var Dombee = (function () {
             state,
             values: values(),
             watch,
-            cache
+            cache,
         }
-    }
+    }Dombee._id = randomId();
+
     function initElements(_elements) {
         let elements = _elements;
 

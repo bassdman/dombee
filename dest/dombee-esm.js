@@ -19,6 +19,10 @@ function expressionTypeJsTemplateString(text, values) {
     return fn;
 }
 
+function randomId(prefix) {
+    return prefix + Math.random().toString(36).substring(2, 15);
+}
+
 const globalCache = {
     directives: [],
     dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
@@ -35,10 +39,6 @@ function Dombee(_state = {}) {
         bindings: {},
         dependencies: {}
     };
-
-    function randomId(prefix) {
-        return prefix + Math.random().toString(36).substring(2, 15);
-    }
 
     const state = new Proxy(_state, {
         set(target, property, value) {
@@ -207,9 +207,10 @@ function Dombee(_state = {}) {
         state,
         values: values(),
         watch,
-        cache
+        cache,
     }
-}
+}Dombee._id = randomId();
+
 function initElements(_elements) {
     let elements = _elements;
 

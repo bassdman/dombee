@@ -16,6 +16,9 @@ export default [{
     }, {
         file: 'dest/dombee-esm.js',
         format: 'es',
+    }, {
+        file: 'dest/dombee-cjs.js',
+        format: 'cjs',
     }],
     /*plugins: [
       resolve(),
