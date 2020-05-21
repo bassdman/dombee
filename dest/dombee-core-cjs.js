@@ -1,3 +1,7 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
 function dependencyEvaluationStrategyDefault(fn, state) {
     const fnText = typeof fn == 'function' ? fn.toString() : fn;
     return Object.keys(state).filter(key => {
@@ -277,4 +281,11 @@ const pseudoinstance = function() {
     return globalDombeeInstance;
 };
 
-export { globalDombeeInstance as Dombee, addExpressionType, dependencyEvaluationStrategy, dependencyEvaluationStrategyDefault, directive, expressionTypeJs, expressionTypeJsTemplateString, pseudoinstance as instance };
+exports.Dombee = globalDombeeInstance;
+exports.addExpressionType = addExpressionType;
+exports.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
+exports.dependencyEvaluationStrategyDefault = dependencyEvaluationStrategyDefault;
+exports.directive = directive;
+exports.expressionTypeJs = expressionTypeJs;
+exports.expressionTypeJsTemplateString = expressionTypeJsTemplateString;
+exports.instance = pseudoinstance;

@@ -276,6 +276,10 @@ var Dombee = (function (exports) {
         expressionTypeJsTemplateString
     });
 
+    const pseudoinstance = function() {
+        return globalDombeeInstance;
+    };
+
     exports.Dombee = globalDombeeInstance;
     exports.addExpressionType = addExpressionType;
     exports.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
@@ -283,7 +287,7 @@ var Dombee = (function (exports) {
     exports.directive = directive;
     exports.expressionTypeJs = expressionTypeJs;
     exports.expressionTypeJsTemplateString = expressionTypeJsTemplateString;
-    exports.instance = instance;
+    exports.instance = pseudoinstance;
 
     return exports;
 

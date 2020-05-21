@@ -37,6 +37,9 @@ export default [{
     }, {
         file: 'dest/dombee-core-esm.js',
         format: 'es',
+    }, {
+        file: 'dest/dombee-core-cjs.js',
+        format: 'cjs',
     }],
     /*plugins: [
       resolve(),
