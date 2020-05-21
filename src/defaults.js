@@ -4,3 +4,17 @@ export function dependencyEvaluationStrategyDefault(fn, state) {
         return fnText.match(new RegExp("\\b" + key + "\\b"));
     });
 }
+
+export function expressionTypeJs(text, values) {
+    const paramKeys = Object.keys(values);
+    const codeNonString = 'return ' + text + ';';
+    const fn = Function(...paramKeys, codeNonString);
+    return fn;
+}
+
+export function expressionTypeJsTemplateString(text, values) {
+    const paramKeys = Object.keys(values);
+    const codeString = 'return `' + text + '`;';
+    const fn = Function(...paramKeys, codeString);
+    return fn;
+}

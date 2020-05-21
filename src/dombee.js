@@ -92,7 +92,6 @@ directive(function onRenderStyleXyz() {
         },
         expressions: elem => {
             const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
-            console.log(expressions);
             return expressions;
         },
         onChange(elem, result, { property }) {
@@ -116,7 +115,6 @@ directive(function onRenderClassXyz() {
                     classname: key.replace('class.', '')
                 }
             });
-            console.log(expressions);
             return expressions;
         },
         onChange(elem, result, { property, value, computation }) {

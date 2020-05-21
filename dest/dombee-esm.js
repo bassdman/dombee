@@ -5,9 +5,28 @@ function dependencyEvaluationStrategyDefault(fn, state) {
     });
 }
 
+function expressionTypeJs(text, values) {
+    const paramKeys = Object.keys(values);
+    const codeNonString = 'return ' + text + ';';
+    const fn = Function(...paramKeys, codeNonString);
+    return fn;
+}
+
+function expressionTypeJsTemplateString(text, values) {
+    const paramKeys = Object.keys(values);
+    const codeString = 'return `' + text + '`;';
+    const fn = Function(...paramKeys, codeString);
+    return fn;
+}
+
 const globalCache = {
     directives: [],
-    dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault
+    dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
+    expressionTypes: {
+        "js": expressionTypeJs,
+        "js-template-string": expressionTypeJsTemplateString
+    },
+    defaultExpressionTypes: ['js', 'js-template-string']
 };
 
 function Dombee(_state = {}) {
@@ -38,41 +57,54 @@ function Dombee(_state = {}) {
         }
     });
 
-    function compute(text = '') {
+    function compute(text = '', expressionTypes) {
         const _values = values();
         const paramValues = Object.keys(_values).map(key => _values[key]);
 
-        const fn = typeof text == 'string' ? toFn(text) : text;
+        const fn = typeof text == 'string' ? toFn(text, expressionTypes) : text;
         const result = fn(...paramValues); //wirft einen Fehler, wenn invalide
         return result;
     }
 
-    function toFn(text) {
+    function toFn(text, expressionTypes) {
 
         const _values = values('parsable');
 
-
-        const paramKeys = Object.keys(_values);
-        try {
-            const codeNonString = 'return ' + text + ';';
-            const fn = Function(...paramKeys, codeNonString);
-            return fn;
-        } catch (e) {
+        for (let expressionTypeKey of expressionTypes) {
             try {
-                const codeString = 'return `' + text + '`;';
-                const fn = Function(...paramKeys, codeString);
-                return fn;
-            } catch (e) {
-                console.log('code can not be parsed', codeNonString);
-            }
+                const expressionTypeFn = globalCache.expressionTypes[expressionTypeKey];
+                if (expressionTypeFn == null)
+                    throw `Expressiontype "${expressionTypeKey}" does not exist. If the name is correct, please add it with "Dombee.addExpressionType('${expressionTypeKey}', function(text,values){/*your code here*/})"`;
 
+                return expressionTypeFn(text, _values);
+            } catch (e) {
+                if (typeof e == 'string')
+                    throw new Error(e);
+                // This expressionType did not succeed. Maybe it is another one.
+                // Try next one
+            }
         }
+
+        //no expressiontype succeeded, throw error;
+        throw new Error(`Expression ${text} can not be parsed.`);
     }
 
-    function addDependencies(expressionResult, name, elemid, bindingFn, ) {
+    function getExpressionTypes(directive) {
+        if (!directive || !directive.expressionTypes)
+            return globalCache.defaultExpressionTypes;
+
+        if (Array.isArray(directive.expressionTypes))
+            return directive.expressionTypes;
+
+        return [directive.expressionTypes]
+
+    }
+
+    function addDependencies(expressionResult, name, elemid, directive = {}, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
         const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
+        const expressionTypes = getExpressionTypes(directive);
 
         for (let key of dependencies) {
 
@@ -86,10 +118,11 @@ function Dombee(_state = {}) {
                 cache.bindings[matchid] = {
                     elemid,
                     name,
-                    bindingFn,
-                    resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult),
+                    onChange: directive.onChange,
+                    resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult, expressionTypes),
                     resultFnRaw: expressionResult.expression ? expressionResult.expression : expressionResult,
-                    expression: expressionResult
+                    expression: expressionResult,
+                    expressionTypes
                 };
             }
         }    }
@@ -143,7 +176,7 @@ function Dombee(_state = {}) {
                     expressions = [expressions];
 
                 for (let expression of expressions) {
-                    addDependencies(expression, 0, elemId, directive.onChange);
+                    addDependencies(expression, 0, elemId, directive);
                 }
 
             }
@@ -155,10 +188,10 @@ function Dombee(_state = {}) {
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const elem = document.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
-            const result = compute(cacheUpdateEntry.resultFn);
+            const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
-            if (cacheUpdateEntry.bindingFn)
-                cacheUpdateEntry.bindingFn(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
+            if (cacheUpdateEntry.onChange)
+                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
         }
     };
 
@@ -205,12 +238,29 @@ function dependencyEvaluationStrategy(fn) {
         throw new Error('fn is null but must be a function;')
 
     globalCache.dependencyEvaluationStrategy = fn;
-
 }
 
-Dombee.directive = directive;
-Dombee.dependencyEvaluationStrategyDefault = dependencyEvaluationStrategyDefault;
-Dombee.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
+function addExpressionType(name, fn) {
+    if (name == null)
+        throw new Error('addExpressionType(name,fn) failed.  Name is undefined');
+
+    if (fn == null)
+        throw new Error('addExpressionType(name,fn) failed. Function fn is undefined');
+
+    if (globalCache.expressionTypes[name])
+        throw new Error('addExpressionType(name,fn) failed. Expressiontype ' + name + ' already exists an can not be overwritten. Please choose another name');
+
+    globalCache.expressionTypes[name] = fn;
+}
+
+Object.assign(Dombee, {
+    directive,
+    dependencyEvaluationStrategy,
+    dependencyEvaluationStrategyDefault,
+    addExpressionType,
+    expressionTypeJs,
+    expressionTypeJsTemplateString
+});
 
 directive({
     name: 'inputElementCheckboxes',
@@ -301,7 +351,6 @@ directive(function onRenderStyleXyz() {
         },
         expressions: elem => {
             const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
-            console.log(expressions);
             return expressions;
         },
         onChange(elem, result, { property }) {
@@ -325,7 +374,6 @@ directive(function onRenderClassXyz() {
                     classname: key.replace('class.', '')
                 }
             });
-            console.log(expressions);
             return expressions;
         },
         onChange(elem, result, { property, value, computation }) {
