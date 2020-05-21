@@ -6,8 +6,7 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "rollup --config",
-        "build_default": "rollup src/dombee.js --file dest/dombee.js --format iife;minify dest/dombee.js > dest/dombee.min.js;",
-        "build_core": "rollup src/dombee-core.js --file dest/dombee-core.js --format iife;minify dest/dombee-core.js > dest/dombee-core.min.js;"
+        "watch": "rollup --config --watch"
     },
     "repository": {
         "type": "git",

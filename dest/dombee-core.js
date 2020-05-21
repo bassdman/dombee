@@ -1,7 +1,7 @@
 var Dombee = (function (exports) {
     'use strict';
 
-    function defaultDependencyEvaluationStrategy(fn, state) {
+    function dependencyEvaluationStrategyDefault(fn, state) {
         const fnText = typeof fn == 'function' ? fn.toString() : fn;
         return Object.keys(state).filter(key => {
             return fnText.match(new RegExp("\\b" + key + "\\b"));
@@ -9,7 +9,8 @@ var Dombee = (function (exports) {
     }
 
     const globalCache = {
-        directives: []
+        directives: [],
+        dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault
     };
 
     function Dombee(_state = {}) {
@@ -39,17 +40,6 @@ var Dombee = (function (exports) {
                 return value;
             }
         });
-
-        function getDependencyEvaluationStrategy(state) {
-            try {
-                dependencyEvaluationStrategy(function() {}, state);
-                return dependencyEvaluationStrategy();
-            } catch (e) {
-                if (e == 'nostrategy')
-                    return defaultDependencyEvaluationStrategy;
-                return dependencyEvaluationStrategy;
-            }
-        }
 
         function compute(text = '') {
             const _values = values();
@@ -82,10 +72,10 @@ var Dombee = (function (exports) {
             }
         }
 
-        function addDependencies(expressionResult, name, elemid, evaluationStrategy, bindingFn, ) {
+        function addDependencies(expressionResult, name, elemid, bindingFn, ) {
             const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
-            const dependencies = evaluationStrategy(fnText, state);
+            const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
 
             for (let key of dependencies) {
 
@@ -138,8 +128,6 @@ var Dombee = (function (exports) {
         function watch(key, fn) {
         }
 
-        const evaluationStrategy = getDependencyEvaluationStrategy(state);
-
         for (let _directive of globalCache.directives) {
             let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
             directive = Object.assign({ name: _directive.name }, directive);
@@ -158,7 +146,7 @@ var Dombee = (function (exports) {
                         expressions = [expressions];
 
                     for (let expression of expressions) {
-                        addDependencies(expression, 0, elemId, evaluationStrategy, directive.onChange);
+                        addDependencies(expression, 0, elemId, directive.onChange);
                     }
 
                 }
@@ -179,7 +167,7 @@ var Dombee = (function (exports) {
 
         Object.keys(state).forEach(key => {
             if (typeof state[key] == 'function') {
-                addDependencies(state[key], key, 0, evaluationStrategy);
+                addDependencies(state[key], key);
             }
 
             render(state, key, state[key]);
@@ -215,17 +203,21 @@ var Dombee = (function (exports) {
         globalCache.directives.push(config);
     }
 
-    function dependencyEvaluationStrategy() {
-        throw 'nostrategy';
+    function dependencyEvaluationStrategy(fn) {
+        if (fn == null)
+            throw new Error('fn is null but must be a function;')
+
+        globalCache.dependencyEvaluationStrategy = fn;
+
     }
 
     Dombee.directive = directive;
-    Dombee.defaultDependencyEvaluationStrategy = defaultDependencyEvaluationStrategy;
+    Dombee.dependencyEvaluationStrategyDefault = dependencyEvaluationStrategyDefault;
     Dombee.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
 
     exports.Dombee = Dombee;
-    exports.defaultDependencyRecognitionStrategy = defaultDependencyEvaluationStrategy;
     exports.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
+    exports.dependencyEvaluationStrategyDefault = dependencyEvaluationStrategyDefault;
     exports.directive = directive;
 
     return exports;

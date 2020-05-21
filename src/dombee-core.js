@@ -1,7 +1,8 @@
-import { defaultDependencyEvaluationStrategy } from "./defaults.js";
+import { dependencyEvaluationStrategyDefault } from "./defaults.js";
 
 const globalCache = {
-    directives: []
+    directives: [],
+    dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault
 }
 
 function Dombee(_state = {}) {
@@ -32,17 +33,6 @@ function Dombee(_state = {}) {
             return value;
         }
     });
-
-    function getDependencyEvaluationStrategy(state) {
-        try {
-            dependencyEvaluationStrategy(function() {}, state);
-            return dependencyEvaluationStrategy();
-        } catch (e) {
-            if (e == 'nostrategy')
-                return defaultDependencyEvaluationStrategy;
-            return dependencyEvaluationStrategy;
-        }
-    }
 
     function compute(text = '') {
         const _values = values();
@@ -75,10 +65,10 @@ function Dombee(_state = {}) {
         }
     }
 
-    function addDependencies(expressionResult, name, elemid, evaluationStrategy, bindingFn, ) {
+    function addDependencies(expressionResult, name, elemid, bindingFn, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
-        const dependencies = evaluationStrategy(fnText, state);
+        const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
 
         for (let key of dependencies) {
 
@@ -134,8 +124,6 @@ function Dombee(_state = {}) {
             watched[key] = fn;
     }
 
-    const evaluationStrategy = getDependencyEvaluationStrategy(state);
-
     for (let _directive of globalCache.directives) {
         let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
         directive = Object.assign({ name: _directive.name }, directive);
@@ -154,7 +142,7 @@ function Dombee(_state = {}) {
                     expressions = [expressions];
 
                 for (let expression of expressions) {
-                    addDependencies(expression, 0, elemId, evaluationStrategy, directive.onChange);
+                    addDependencies(expression, 0, elemId, directive.onChange);
                 }
 
             }
@@ -175,7 +163,7 @@ function Dombee(_state = {}) {
 
     Object.keys(state).forEach(key => {
         if (typeof state[key] == 'function') {
-            addDependencies(state[key], key, 0, evaluationStrategy);
+            addDependencies(state[key], key);
         }
 
         render(state, key, state[key])
@@ -212,12 +200,16 @@ function directive(config) {
     globalCache.directives.push(config);
 }
 
-function dependencyEvaluationStrategy() {
-    throw 'nostrategy';
+function dependencyEvaluationStrategy(fn) {
+    if (fn == null)
+        throw new Error('fn is null but must be a function;')
+
+    globalCache.dependencyEvaluationStrategy = fn;
+
 }
 
 Dombee.directive = directive;
-Dombee.defaultDependencyEvaluationStrategy = defaultDependencyEvaluationStrategy;
+Dombee.dependencyEvaluationStrategyDefault = dependencyEvaluationStrategyDefault;
 Dombee.dependencyEvaluationStrategy = dependencyEvaluationStrategy;
 
-export { Dombee, directive, defaultDependencyEvaluationStrategy as defaultDependencyRecognitionStrategy, dependencyEvaluationStrategy };
+export { Dombee, directive, dependencyEvaluationStrategyDefault, dependencyEvaluationStrategy };
