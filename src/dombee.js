@@ -1,4 +1,4 @@
-import { directive, Dombee } from './dombee-core.js';
+import { directive, Dombee, onLoad } from './dombee-core.js';
 
 
 
@@ -111,22 +111,32 @@ directive(function onRenderClassXyz() {
         expressions: elem => {
             const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).map(key => {
                 return {
-                    computation: elem.dataset[key],
+                    expression: elem.dataset[key],
                     classname: key.replace('class.', '')
                 }
             });
             return expressions;
         },
-        onChange(elem, result, { property, value, computation }) {
+        onChange(elem, result, { property, value, expression }) {
             if (result)
-                elem.classList.add(computation.classname)
+                elem.classList.add(expression.classname)
             else
-                elem.classList.remove(computation.classname);
+                elem.classList.remove(expression.classname);
         },
     }
 });
 
-directive(function addDataModelEvents({ data, state }) {
+directive(function onRenderDataShow() {
+    return {
+        bindTo: 'data-show',
+        expressions: elem => elem.dataset.show,
+        onChange(elem, result) {
+            elem.style.display = result ? 'block' : 'none';
+        },
+    }
+});
+
+onLoad(function addDataModelEvents({ state }) {
     const allInputsNoCheckbox = document.querySelectorAll('[data-model]:not([type="checkbox"])');
     const allCheckboxex = document.querySelectorAll('input[data-model][type="checkbox"]');
 

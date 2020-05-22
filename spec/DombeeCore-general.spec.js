@@ -1,11 +1,10 @@
+const { getDombeeCoreInstance } = require('./helpers/helpers');
+const Dombee = getDombeeCoreInstance();
+
 describe("Dombee", function() {
 
-    const Dombee = require('../dest/dombee-cjs.js');
-    const DombeeCore = require('../dest/dombee-core-cjs.js');
-
     beforeEach(function() {
-        // player = new Player();
-        // song = new Song();
+        Dombee.reset();
     });
 
     it("should return a function", function() {
@@ -36,19 +35,7 @@ describe("Dombee", function() {
         expect(Dombee._id).toBeDefined();
     });
 
-    describe("with multiple instances created", function() {
-        it("should have a global function called 'instance'", function() {
-            expect(typeof DombeeCore.instance).toBe('function');
-        });
-        it("should have different ids for different instances", function() {
-            const instance1 = DombeeCore.instance();
-            const instance2 = DombeeCore.instance();
 
-            expect(instance1).toBeDefined();
-            expect(instance1._id).toBeDefined();
-            expect(instance1._id).not.toBe(instance2._id);
-        });
-    });
     /* describe("when song has been paused", function() {
        beforeEach(function() {
          player.play(song);

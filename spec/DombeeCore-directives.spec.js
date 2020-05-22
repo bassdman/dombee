@@ -1,18 +1,18 @@
-const { getDombeeInstance, domElement } = require("./helpers/helpers");
+const { getDombeeCoreInstance } = require('./helpers/helpers');
+const Dombee = getDombeeCoreInstance();
 
 describe("Dombee.directive", function() {
 
 
     // valid default-values for making the tests more clean
+    function expressions() {};
+
     function onChange() {};
     const bindTo = '.abc';
 
-    function expressions() {};
-
-    let Dombee;
 
     beforeEach(() => {
-        Dombee = getDombeeInstance();
+        Dombee.reset();
     });
 
     it("should should exist as function in global Dombee Object", function() {
@@ -60,12 +60,12 @@ describe("Dombee.directive", function() {
         it("should be valid if it is a function", function() {
             expect(() => Dombee.directive({ bindTo, onChange, expressions: function() { return 'abc' } })).not.toThrow();
             //Initialize Dombee-Object to make sure that no error happens during initialisation
-            //        Dombee({});
+            expect(() => Dombee({})).not.toThrow();
         });
         it("should be valid if it is an Array of Strings", function() {
             expect(() => Dombee.directive({ bindTo, onChange, expressions: ['abc'] })).not.toThrow();
             //Initialize Dombee-Object to make sure that no error happens during initialisation
-            //          Dombee({});
+            expect(() => Dombee({})).not.toThrow();
         });
         it("should throw an error if it is not a function, Array or String", function() {
             expect(() => Dombee.directive({ bindTo, onChange, expressions: 1 })).toThrow();
@@ -76,6 +76,18 @@ describe("Dombee.directive", function() {
 
             //Initialize Dombee-Object to make sure that no error happens during initialisation
             //      Dombee({});
+        });
+        it("should be valid if it is an object having a key 'expression'", function() {
+            expect(() => Dombee.directive({
+                bindTo,
+                onChange,
+                expressions: {
+                    expression: 'xyz'
+                }
+            })).not.toThrow();
+
+
+            expect(() => Dombee({})).not.toThrow();
         });
     });
 
