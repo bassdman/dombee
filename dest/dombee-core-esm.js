@@ -24,7 +24,7 @@ function randomId(prefix = "") {
 }
 
 function instance() {
-    function Dombee(_state = {}) {
+    function DombeeInstance(_state = {}) {
 
         const cache = {
             bindings: {},
@@ -63,7 +63,7 @@ function instance() {
 
             for (let expressionTypeKey of expressionTypes) {
                 try {
-                    const expressionTypeFn = Dombee.globalCache.expressionTypes[expressionTypeKey];
+                    const expressionTypeFn = DombeeInstance.globalCache.expressionTypes[expressionTypeKey];
                     if (expressionTypeFn == null)
                         throw `Expressiontype "${expressionTypeKey}" does not exist. If the name is correct, please add it with "Dombee.addExpressionType('${expressionTypeKey}', function(text,values){/*your code here*/})"`;
 
@@ -82,7 +82,7 @@ function instance() {
 
         function getExpressionTypes(directive) {
             if (!directive || !directive.expressionTypes)
-                return Dombee.globalCache.defaultExpressionTypes;
+                return DombeeInstance.globalCache.defaultExpressionTypes;
 
             if (Array.isArray(directive.expressionTypes))
                 return directive.expressionTypes;
@@ -94,7 +94,7 @@ function instance() {
         function addDependencies(expressionResult, name, elemid, directive = {}, ) {
             const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
-            const dependencies = Dombee.globalCache.dependencyEvaluationStrategy(fnText, state);
+            const dependencies = DombeeInstance.globalCache.dependencyEvaluationStrategy(fnText, state);
             const expressionTypes = getExpressionTypes(directive);
 
             for (let key of dependencies) {
@@ -118,20 +118,34 @@ function instance() {
                 }
             }        }
 
+        function isDomElement(elemToProove) {
+            try {
+                var elem = getDocument().createElement('div');
+                elem.appendChild(elemToProove);
+            } catch (e) {
+                return false;
+            }
+        }
+
         function initElements(_elements) {
             let elements = _elements;
 
             if (typeof elements == 'function')
                 elements = elements();
 
-            if (elements == null)
-                throw new Error('Registerconfig.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.');
+            if (!elements)
+                throw new Error('Error in function Dombee.directive(config). config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.');
 
-            if (Array.isArray(elements))
+            if (Array.isArray(elements)) {
+                for (let elem of elements) {
+                    if (!isDomElement(elem))
+                        throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
+                }
                 return elements;
+            }
 
             if (typeof elements == 'string')
-                return document.querySelectorAll(elements);
+                return getDocument().querySelectorAll(elements) || [];
 
             return [elements];
         }
@@ -163,31 +177,36 @@ function instance() {
             return retObj;
         }
 
+        function getDocument() {
+            return DombeeInstance.document || document;
+        }
+
         function watch(key, fn) {
         }
 
-        for (let _directive of Dombee.globalCache.directives) {
+        for (let _directive of DombeeInstance.globalCache.directives) {
+
             let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
             directive = Object.assign({ name: _directive.name }, directive);
 
-            if (directive.onChange) {
-                const elements = initElements(directive.bindTo);
+            const elements = initElements(directive.bindTo);
 
-                for (let elem of elements) {
-                    const elemId = elem.dataset.id || randomId('id_');
+            for (let elem of elements) {
+                elem.dataset = elem.dataset || {};
 
-                    if (elem.dataset.id == null)
-                        elem.dataset.id = elemId;
+                const elemId = elem.dataset.id || randomId('id_');
 
-                    let expressions = directive.expressions(elem);
-                    if (!Array.isArray(expressions))
-                        expressions = [expressions];
+                if (elem.dataset.id == null)
+                    elem.dataset.id = elemId;
 
-                    for (let expression of expressions) {
-                        addDependencies(expression, 0, elemId, directive);
-                    }
+                let expressions = directive.expressions(elem);
+                if (!Array.isArray(expressions))
+                    expressions = [expressions];
 
+                for (let expression of expressions) {
+                    addDependencies(expression, 0, elemId, directive);
                 }
+
             }
         }
 
@@ -195,7 +214,7 @@ function instance() {
             const toUpdate = cache.dependencies[prop] || [];
             for (let updateEntry of toUpdate) {
                 const cacheUpdateEntry = cache.bindings[updateEntry];
-                const elem = document.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+                const elem = getDocument().querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
                 const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
                 if (cacheUpdateEntry.onChange)
@@ -217,64 +236,81 @@ function instance() {
             watch,
             cache,
         }
-    }    Dombee._id = randomId();
-    Dombee.globalCache = {
-        directives: [],
-        dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
-        expressionTypes: {
-            "js": expressionTypeJs,
-            "js-template-string": expressionTypeJsTemplateString
-        },
-        defaultExpressionTypes: ['js', 'js-template-string']
-    };
+    }
+    function directive(config) {
+        if (config == null)
+            throw new Error('Dombee.directive(config) failed. The first parameter should be a config object or function, but is null.');
 
-    return Dombee;
+        if (config.onChange == null && typeof config == 'object')
+            throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
+
+        if (typeof config.onChange !== 'function' && typeof config == 'object')
+            throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
+
+        if (typeof config == 'object' && !(typeof config.expressions == 'string' || typeof config.expressions == 'function' || Array.isArray(config.expressions)))
+            throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
+
+        if (typeof config == 'object' && !(typeof config.bindTo == 'string' || typeof config.bindTo == 'function' || Array.isArray(config.bindTo)))
+            throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
+
+        DombeeInstance.globalCache.directives.push(config);
+    }
+
+    function dependencyEvaluationStrategy(fn) {
+        if (fn == null)
+            throw new Error('fn is null but must be a function;')
+
+        DombeeInstance.dependencyEvaluationStrategy = fn;
+    }
+
+    function addExpressionType(name, fn) {
+        if (name == null)
+            throw new Error('addExpressionType(name,fn) failed.  Name is undefined');
+
+        if (fn == null)
+            throw new Error('addExpressionType(name,fn) failed. Function fn is undefined');
+
+        if (getScope(this).globalCache.expressionTypes[name])
+            throw new Error('addExpressionType(name,fn) failed. Expressiontype ' + name + ' already exists an can not be overwritten. Please choose another name');
+
+        DombeeInstance.expressionTypes[name] = fn;
+    }
+
+    Object.assign(DombeeInstance, {
+        directive,
+        dependencyEvaluationStrategy,
+        dependencyEvaluationStrategyDefault,
+        addExpressionType,
+        expressionTypeJs,
+        expressionTypeJsTemplateString,
+        _id: randomId(),
+        globalCache: {
+            directives: [],
+            dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
+            expressionTypes: {
+                "js": expressionTypeJs,
+                "js-template-string": expressionTypeJsTemplateString
+            },
+            defaultExpressionTypes: ['js', 'js-template-string']
+        }
+    });
+
+    return DombeeInstance;
 }
 
 const globalDombeeInstance = instance();
 
-function getScope(scope) {
-    if (scope == undefined)
-        return globalDombeeInstance;
 
-    return scope;
+function directive() {
+    globalDombeeInstance.directive(...arguments);
 }
 
-function directive(config) {
-    getScope(this).globalCache.directives.push(config);
+function addExpressionType() {
+    globalDombeeInstance.addExpressionType(...arguments);
 }
 
-function dependencyEvaluationStrategy(fn) {
-    if (fn == null)
-        throw new Error('fn is null but must be a function;')
-
-    getScope(this).dependencyEvaluationStrategy = fn;
+function dependencyEvaluationStrategy() {
+    globalDombeeInstance.dependencyEvaluationStrategy(...arguments);
 }
 
-function addExpressionType(name, fn) {
-    if (name == null)
-        throw new Error('addExpressionType(name,fn) failed.  Name is undefined');
-
-    if (fn == null)
-        throw new Error('addExpressionType(name,fn) failed. Function fn is undefined');
-
-    if (getScope(this).globalCache.expressionTypes[name])
-        throw new Error('addExpressionType(name,fn) failed. Expressiontype ' + name + ' already exists an can not be overwritten. Please choose another name');
-
-    getScope(this).expressionTypes[name] = fn;
-}
-
-Object.assign(globalDombeeInstance, {
-    directive,
-    dependencyEvaluationStrategy,
-    dependencyEvaluationStrategyDefault,
-    addExpressionType,
-    expressionTypeJs,
-    expressionTypeJsTemplateString
-});
-
-const pseudoinstance = function() {
-    return globalDombeeInstance;
-};
-
-export { globalDombeeInstance as Dombee, addExpressionType, dependencyEvaluationStrategy, dependencyEvaluationStrategyDefault, directive, expressionTypeJs, expressionTypeJsTemplateString, pseudoinstance as instance };
+export { globalDombeeInstance as Dombee, addExpressionType, dependencyEvaluationStrategy, dependencyEvaluationStrategyDefault, directive, expressionTypeJs, expressionTypeJsTemplateString, instance };
