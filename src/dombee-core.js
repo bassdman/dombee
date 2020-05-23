@@ -1,4 +1,6 @@
 import { dependencyEvaluationStrategyDefault, expressionTypeJs, expressionTypeJsTemplateString } from "./defaults.js";
+import { createDirective } from './partials/createDirective';
+
 import { randomId } from "./helpers/randomId.js";
 import cloneDeep from 'lodash.clonedeep';
 
@@ -15,7 +17,7 @@ const initialGlobalCache = {
     },
     defaultExpressionTypes: ['js', 'js-template-string']
 };
-let globalCache = cloneDeep(initialGlobalCache);
+export let globalCache = cloneDeep(initialGlobalCache);
 
 
 function Dombee(_state = {}) {
@@ -119,38 +121,6 @@ function Dombee(_state = {}) {
         };
     }
 
-    function isDomElement(elemToProove) {
-        try {
-            // var elem = getDocument().createElement('div');
-            return elemToProove.tagName != null;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    function initElements(_elements, directive) {
-        let elements = _elements;
-
-        if (typeof elements == 'function')
-            elements = elements();
-
-        if (!elements)
-            throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
-
-        if (Array.isArray(elements)) {
-            for (let elem of elements) {
-                if (!isDomElement(elem) && !typeof elem.expression == 'string')
-                    throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
-            }
-            return elements;
-        }
-
-        if (typeof elements == 'string')
-            return getDocument().querySelectorAll(elements) || [];
-
-        return [elements];
-    }
-
     function values(parsable) {
         const retObj = {};
 
@@ -187,14 +157,11 @@ function Dombee(_state = {}) {
             watched[key] = fn;
     }
 
-    for (let _directive of globalCache.directives) {
+    for (let directiveConfig of globalCache.directives) {
 
-        let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
-        directive = Object.assign({ name: _directive.name }, directive);
+        const directive = createDirective(directiveConfig, { document: getDocument(), state, values });
 
-        const elements = initElements(directive.bindTo, directive);
-
-        for (let elem of elements) {
+        for (let elem of directive.elements) {
             if (!elem.dataset)
                 elem.dataset = {};
 
@@ -242,25 +209,6 @@ function Dombee(_state = {}) {
     }
 };
 
-function directive(config) {
-    if (config == null)
-        throw new Error('Dombee.directive(config) failed. The first parameter should be a config object or function, but is null.');
-
-    if (config.onChange == null && typeof config == 'object')
-        throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
-
-    if (typeof config.onChange !== 'function' && typeof config == 'object')
-        throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
-
-    if (typeof config == 'object' && !(typeof config.expressions == 'string' || typeof config.expressions == 'function' || Array.isArray(config.expressions) || config.expressions.expression))
-        throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
-
-    if (typeof config == 'object' && !(typeof config.bindTo == 'string' || typeof config.bindTo == 'function' || Array.isArray(config.bindTo)))
-        throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
-
-    globalCache.directives.push(config);
-}
-
 function dependencyEvaluationStrategy(fn) {
     if (fn == null)
         throw new Error('fn is null but must be a function;')
@@ -291,6 +239,10 @@ function onLoad(fn) {
 
 function reset() {
     globalCache = cloneDeep(initialGlobalCache);
+}
+
+function directive(config) {
+    globalCache.directives.push(config);
 }
 
 Object.assign(Dombee, {

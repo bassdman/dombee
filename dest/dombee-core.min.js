@@ -22,6 +22,82 @@ var Dombee = (function (exports) {
         return fn;
     }
 
+    function createDirective(config, { document, state, values }) {
+        if (config == null)
+            throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
+        let directive = config;
+        /*
+            When the directive is wrapped in a function, unwrap this function
+            Example: Dombee.directive(function testFn(){
+                return {
+                    bindTo: 'aselector',
+                    onChange: () => { //do sth },
+                    expressions: ['expression1','expression2']
+                }
+            })
+            will result in
+            {
+                name: 'testFn'
+                bindTo: 'aselector',
+                onChange: () => { //do sth },
+                expressions: ['expression1','expression2']
+            }
+        */
+        if (typeof config == 'function') {
+            directive = config({ state, data: values });
+            if (directive == null)
+                throw new Error('Dombee.directive(config) failed. Your first parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?');
+            directive.name = config.name;
+        }
+        if (directive.onChange == null)
+            throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
+        if (typeof directive.onChange !== 'function')
+            throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
+        if (!(typeof directive.expressions == 'string' || typeof directive.expressions == 'function' || Array.isArray(directive.expressions) || directive.expressions.expression))
+            throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
+        if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
+            throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
+        /*
+            Initialize the elements attribute
+        */
+        directive.elements = initElements(directive.bindTo, directive, document);
+
+
+        return directive;
+    }
+
+    function initElements(_elements, directive, document) {
+        let elements = _elements;
+
+        if (typeof elements == 'function')
+            elements = elements();
+
+        if (!elements)
+            throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
+
+        if (Array.isArray(elements)) {
+            for (let elem of elements) {
+                if (!isDomElement(elem) && !typeof elem.expression == 'string')
+                    throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
+            }
+            return elements;
+        }
+
+        if (typeof elements == 'string')
+            return document.querySelectorAll(elements) || [];
+
+        return [elements];
+    }
+
+    function isDomElement(elemToProove) {
+        try {
+            // var elem = getDocument().createElement('div');
+            return elemToProove.tagName != null;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function randomId(prefix = "") {
         return prefix + Math.random().toString(36).substring(2, 15);
     }
@@ -1805,7 +1881,7 @@ var Dombee = (function (exports) {
         },
         defaultExpressionTypes: ['js', 'js-template-string']
     };
-    let globalCache = lodash_clonedeep(initialGlobalCache);
+    exports.globalCache = lodash_clonedeep(initialGlobalCache);
 
 
     function Dombee(_state = {}) {
@@ -1833,7 +1909,7 @@ var Dombee = (function (exports) {
             }
         });
 
-        for (let onload of globalCache.events.onload) {
+        for (let onload of exports.globalCache.events.onload) {
             onload({ cache, state });
         }
 
@@ -1852,7 +1928,7 @@ var Dombee = (function (exports) {
 
             for (let expressionTypeKey of expressionTypes) {
                 try {
-                    const expressionTypeFn = globalCache.expressionTypes[expressionTypeKey];
+                    const expressionTypeFn = exports.globalCache.expressionTypes[expressionTypeKey];
                     if (expressionTypeFn == null)
                         throw `Expressiontype "${expressionTypeKey}" does not exist. If the name is correct, please add it with "Dombee.addExpressionType('${expressionTypeKey}', function(text,values){/*your code here*/})"`;
 
@@ -1871,7 +1947,7 @@ var Dombee = (function (exports) {
 
         function getExpressionTypes(directive) {
             if (!directive || !directive.expressionTypes)
-                return globalCache.defaultExpressionTypes;
+                return exports.globalCache.defaultExpressionTypes;
 
             if (Array.isArray(directive.expressionTypes))
                 return directive.expressionTypes;
@@ -1883,7 +1959,7 @@ var Dombee = (function (exports) {
         function addDependencies(expressionResult, name, elemid, directive = {}, ) {
             const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
-            const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
+            const dependencies = exports.globalCache.dependencyEvaluationStrategy(fnText, state);
             const expressionTypes = getExpressionTypes(directive);
 
             for (let key of dependencies) {
@@ -1906,38 +1982,6 @@ var Dombee = (function (exports) {
                     };
                 }
             }    }
-
-        function isDomElement(elemToProove) {
-            try {
-                // var elem = getDocument().createElement('div');
-                return elemToProove.tagName != null;
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function initElements(_elements, directive) {
-            let elements = _elements;
-
-            if (typeof elements == 'function')
-                elements = elements();
-
-            if (!elements)
-                throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
-
-            if (Array.isArray(elements)) {
-                for (let elem of elements) {
-                    if (!isDomElement(elem) && !typeof elem.expression == 'string')
-                        throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
-                }
-                return elements;
-            }
-
-            if (typeof elements == 'string')
-                return getDocument().querySelectorAll(elements) || [];
-
-            return [elements];
-        }
 
         function values(parsable) {
             const retObj = {};
@@ -1973,14 +2017,11 @@ var Dombee = (function (exports) {
         function watch(key, fn) {
         }
 
-        for (let _directive of globalCache.directives) {
+        for (let directiveConfig of exports.globalCache.directives) {
 
-            let directive = typeof _directive == 'function' ? _directive({ state, data: values() }) : _directive;
-            directive = Object.assign({ name: _directive.name }, directive);
+            const directive = createDirective(directiveConfig, { document: getDocument(), state, values });
 
-            const elements = initElements(directive.bindTo, directive);
-
-            for (let elem of elements) {
+            for (let elem of directive.elements) {
                 if (!elem.dataset)
                     elem.dataset = {};
 
@@ -2027,25 +2068,6 @@ var Dombee = (function (exports) {
             cache,
         }
     }
-    function directive(config) {
-        if (config == null)
-            throw new Error('Dombee.directive(config) failed. The first parameter should be a config object or function, but is null.');
-
-        if (config.onChange == null && typeof config == 'object')
-            throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
-
-        if (typeof config.onChange !== 'function' && typeof config == 'object')
-            throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
-
-        if (typeof config == 'object' && !(typeof config.expressions == 'string' || typeof config.expressions == 'function' || Array.isArray(config.expressions) || config.expressions.expression))
-            throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
-
-        if (typeof config == 'object' && !(typeof config.bindTo == 'string' || typeof config.bindTo == 'function' || Array.isArray(config.bindTo)))
-            throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
-
-        globalCache.directives.push(config);
-    }
-
     function dependencyEvaluationStrategy(fn) {
         if (fn == null)
             throw new Error('fn is null but must be a function;')
@@ -2071,11 +2093,15 @@ var Dombee = (function (exports) {
     }
 
     function onLoad(fn) {
-        globalCache.events.onload.push(fn);
+        exports.globalCache.events.onload.push(fn);
     }
 
     function reset() {
-        globalCache = lodash_clonedeep(initialGlobalCache);
+        exports.globalCache = lodash_clonedeep(initialGlobalCache);
+    }
+
+    function directive(config) {
+        exports.globalCache.directives.push(config);
     }
 
     Object.assign(Dombee, {
@@ -2087,7 +2113,7 @@ var Dombee = (function (exports) {
         expressionTypeJsTemplateString,
         addPlugin,
         onLoad,
-        globalCache,
+        globalCache: exports.globalCache,
         reset,
         _id: randomId()
     });

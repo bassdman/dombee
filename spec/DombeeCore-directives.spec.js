@@ -17,65 +17,58 @@ describe("Dombee.directive", function() {
 
     it("should should exist as function in global Dombee Object", function() {
         expect(typeof Dombee.directive).toBe('function');
-        Dombee({});
     });
 
     it("should throw an error if called with null", function() {
-        expect(() => Dombee.directive()).toThrow();
-        Dombee({});
+        Dombee.directive();
+        expect(() => Dombee({})).toThrow();
     });
     it("should accept objects as parameter", function() {
-        expect(() => Dombee.directive({ onChange, expressions, bindTo })).not.toThrow();
-        Dombee({});
+        Dombee.directive({ onChange, expressions, bindTo })
+        expect(() => Dombee({})).not.toThrow();
     });
     it("should accept functions as parameter", function() {
-        expect(() => Dombee.directive(function() { return { bindTo } })).not.toThrow();
-        Dombee({});
+        Dombee.directive(function() { return { bindTo, onChange, expressions } });
+        expect(() => Dombee({})).not.toThrow();
     });
 
     describe('with object as parameter', function() {
         it("should throw an error if property 'onChange' is null", function() {
-            expect(() => Dombee.directive({ expressions, bindTo })).toThrow();
+            Dombee.directive({ expressions, bindTo });
         });
         it("should throw an error if property 'expressions' is null", function() {
-            expect(() => Dombee.directive({ onChange, bindTo })).toThrow();
+            Dombee.directive({ onChange, bindTo });
         });
         it("should throw an error if property 'bindTo' is null", function() {
-            expect(() => Dombee.directive({ onChange, expressions })).toThrow();
+            Dombee.directive({ onChange, expressions });
+        });
+        afterEach(() => {
+            expect(() => Dombee({}).toThrow());
         });
     });
     describe('property "onChange"', function() {
         it("should be valid if it is a function", function() {
-            expect(() => Dombee.directive({ onChange: function() {}, expressions, bindTo })).not.toThrow();
-            //Initialize Dombee-Object to make sure that no error happens during initialisation
-            //        Dombee({});
+            Dombee.directive({ onChange: function() {}, expressions, bindTo });
+            expect(() => Dombee({}).not.toThrow());
         });
         it("should throw an error if it is not a function", function() {
-            expect(() => Dombee.directive({ onChange: 'abc', expressions, bindTo })).toThrow();
-            //Initialize Dombee-Object to make sure that no error happens during initialisation
-            //        Dombee({});
+            Dombee.directive({ onChange: 'abc', expressions, bindTo });
+            expect(() => Dombee({}).toThrow());
         });
     });
     describe('property "expressions"', function() {
         it("should be valid if it is a function", function() {
-            expect(() => Dombee.directive({ bindTo, onChange, expressions: function() { return 'abc' } })).not.toThrow();
-            //Initialize Dombee-Object to make sure that no error happens during initialisation
+            Dombee.directive({ bindTo, onChange, expressions: function() { return 'abc' } });
             expect(() => Dombee({})).not.toThrow();
         });
         it("should be valid if it is an Array of Strings", function() {
-            expect(() => Dombee.directive({ bindTo, onChange, expressions: ['abc'] })).not.toThrow();
-            //Initialize Dombee-Object to make sure that no error happens during initialisation
+            Dombee.directive({ bindTo, onChange, expressions: ['abc'] });
             expect(() => Dombee({})).not.toThrow();
         });
         it("should throw an error if it is not a function, Array or String", function() {
-            expect(() => Dombee.directive({ bindTo, onChange, expressions: 1 })).toThrow();
-            expect(() => Dombee.directive({
-                onChange,
-                expressions: {}
-            })).toThrow();
+            Dombee.directive({ bindTo, onChange, expressions: 1 });
 
-            //Initialize Dombee-Object to make sure that no error happens during initialisation
-            //      Dombee({});
+            expect(() => Dombee({})).toThrow();
         });
         it("should be valid if it is an object having a key 'expression'", function() {
             expect(() => Dombee.directive({
@@ -109,14 +102,18 @@ describe("Dombee.directive", function() {
             expect(() => Dombee({})).toThrow();
         });
         it("should throw an error if it is not a function, Array or String", function() {
-            expect(() => Dombee.directive({ onChange, expressions, bindTo: 3 })).toThrow();
-            expect(() => Dombee.directive({
-                onChange: function() {},
-                expressions: {}
-            })).toThrow();
+            Dombee.directive({ onChange, expressions, bindTo: 3 });
 
             //Initialize Dombee-Object to make sure that no error happens during initialisation
-            Dombee({});
+            expect(() => Dombee({})).toThrow();
+        });
+        it("should throw an error if it is null", function() {
+            Dombee.directive({
+                onChange: function() {},
+                expressions: {}
+            });
+
+            expect(() => Dombee({})).toThrow();
         });
     });
     /* describe("when song has been paused", function() {
