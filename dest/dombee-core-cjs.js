@@ -23,7 +23,16 @@ function expressionTypeJsTemplateString(text, values) {
     return fn;
 }
 
-function createDirective(config, { document, state, values }) {
+function isDomElement(elemToProove) {
+    try {
+        // var elem = getDocument().createElement('div');
+        return elemToProove.tagName != null;
+    } catch (e) {
+        return false;
+    }
+}
+
+function createDirective(config, { root, state, values }) {
     if (config == null)
         throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
     let directive = config;
@@ -61,13 +70,13 @@ function createDirective(config, { document, state, values }) {
     /*
         Initialize the elements attribute
     */
-    directive.elements = initElements(directive.bindTo, directive, document);
+    directive.elements = initElements(directive.bindTo, directive, root);
 
 
     return directive;
 }
 
-function initElements(_elements, directive, document) {
+function initElements(_elements, directive, root) {
     let elements = _elements;
 
     if (typeof elements == 'function')
@@ -85,18 +94,9 @@ function initElements(_elements, directive, document) {
     }
 
     if (typeof elements == 'string')
-        return document.querySelectorAll(elements) || [];
+        return root.querySelectorAll(elements) || [];
 
     return [elements];
-}
-
-function isDomElement(elemToProove) {
-    try {
-        // var elem = getDocument().createElement('div');
-        return elemToProove.tagName != null;
-    } catch (e) {
-        return false;
-    }
 }
 
 function randomId(prefix = "") {
@@ -1885,7 +1885,18 @@ const initialGlobalCache = {
 exports.globalCache = lodash_clonedeep(initialGlobalCache);
 
 
-function Dombee(_state = {}) {
+function initRoot(config) {
+    const _document = Dombee.document || document;
+    if (isDomElement(config.renderTo))
+        return config.renderTo;
+
+    if (config.renderTo)
+        return _document.querySelector(config.renderTo);
+
+    return _document.documentElement;
+}
+
+function Dombee(config = { data: {} }) {
 
     const cache = {
         _localDumbeeCache: true,
@@ -1893,7 +1904,9 @@ function Dombee(_state = {}) {
         dependencies: {}
     };
 
-    const state = new Proxy(_state, {
+    const root = initRoot(config);
+
+    const state = new Proxy(config.data, {
         set(target, property, value) {
             target[property] = value;
             render(target, property, value);
@@ -2011,16 +2024,12 @@ function Dombee(_state = {}) {
         return retObj;
     }
 
-    function getDocument() {
-        return Dombee.document || document;
-    }
-
     function watch(key, fn) {
     }
 
     for (let directiveConfig of exports.globalCache.directives) {
 
-        const directive = createDirective(directiveConfig, { document: getDocument(), state, values });
+        const directive = createDirective(directiveConfig, { root, state, values });
 
         for (let elem of directive.elements) {
             if (!elem.dataset)
@@ -2049,7 +2058,7 @@ function Dombee(_state = {}) {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const elem = getDocument().querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const elem = root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
@@ -2070,6 +2079,7 @@ function Dombee(_state = {}) {
         values: values(),
         watch,
         cache,
+        root
     }
 }
 function dependencyEvaluationStrategy(fn) {

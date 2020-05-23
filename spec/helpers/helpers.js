@@ -19,6 +19,27 @@ function getDombeeCoreInstance(html = defaultHTML) {
 function domElement() {
     return dom.window.document.createElement('div');
 }
+
+function isDomElement(elemToProove) {
+    try {
+        return elemToProove.tagName != null;
+    } catch (e) {
+        return false;
+    }
+}
+
+function textDirective() {
+    return {
+        bindTo: '[data-text]',
+        expressions: elem => elem.dataset.text,
+        onChange(elem, result, state) {
+            elem.innerText = result;
+        },
+    }
+};
+
 exports.getDombeeInstance = getDombeeInstance;
 exports.getDombeeCoreInstance = getDombeeCoreInstance;
 exports.domElement = domElement;
+exports.isDomElement = isDomElement;
+exports.textDirective = textDirective;

@@ -2,6 +2,8 @@ import { dependencyEvaluationStrategyDefault, expressionTypeJs, expressionTypeJs
 import { createDirective } from './partials/createDirective';
 
 import { randomId } from "./helpers/randomId.js";
+import { isDomElement } from "./helpers/isDomElement";
+
 import cloneDeep from 'lodash.clonedeep';
 
 
@@ -20,7 +22,18 @@ const initialGlobalCache = {
 export let globalCache = cloneDeep(initialGlobalCache);
 
 
-function Dombee(_state = {}) {
+function initRoot(config) {
+    const _document = Dombee.document || document;
+    if (isDomElement(config.renderTo))
+        return config.renderTo;
+
+    if (config.renderTo)
+        return _document.querySelector(config.renderTo);
+
+    return _document.documentElement;
+}
+
+function Dombee(config = { data: {} }) {
     const watched = {};
 
     const cache = {
@@ -29,7 +42,9 @@ function Dombee(_state = {}) {
         dependencies: {}
     };
 
-    const state = new Proxy(_state, {
+    const root = initRoot(config)
+
+    const state = new Proxy(config.data, {
         set(target, property, value) {
             target[property] = value;
             render(target, property, value);
@@ -148,10 +163,6 @@ function Dombee(_state = {}) {
         return retObj;
     }
 
-    function getDocument() {
-        return Dombee.document || document;
-    }
-
     function watch(key, fn) {
         if (!watched[key])
             watched[key] = fn;
@@ -159,7 +170,7 @@ function Dombee(_state = {}) {
 
     for (let directiveConfig of globalCache.directives) {
 
-        const directive = createDirective(directiveConfig, { document: getDocument(), state, values });
+        const directive = createDirective(directiveConfig, { root, state, values });
 
         for (let elem of directive.elements) {
             if (!elem.dataset)
@@ -188,7 +199,7 @@ function Dombee(_state = {}) {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const elem = getDocument().querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const elem = root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
@@ -209,6 +220,7 @@ function Dombee(_state = {}) {
         values: values(),
         watch,
         cache,
+        root
     }
 };
 
