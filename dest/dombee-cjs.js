@@ -2177,23 +2177,25 @@ directive(function dataBind() {
     return {
         bindTo: () => {
             return Array.from(document.querySelectorAll('*')).filter(elem => {
-                const hasBindAttribute = Object.keys(elem.attributes).filter(key =>
-                    key.startsWith('data-bind.') || key.startsWith(':')).length > 0;
+                const hasBindAttribute = Object.keys(elem.attributes).filter(i => {
+                    const attributeName = elem.attributes[i].name;
+                    return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
+                }).length > 0;
                 return hasBindAttribute;
             });
         },
         expressions: elem => {
-            const expressions = Object.keys(elem.attributes).filter(key => key.startsWith('data-bind.') || key.startsWith(':')).map(key => {
+            const expressions = Object.keys(elem.attributes).filter(i => elem.attributes[i].name.startsWith('data-bind:') || elem.attributes[i].name.startsWith(':')).map(i => {
+                const attributeName = elem.attributes[i].name;
                 return {
-                    expression: elem.attributes[key],
-                    classname: key.replace('data-bind.', '')
+                    expression: elem.getAttribute(attributeName),
+                    attributeName: attributeName.replace('data-bind:', '').replace(':', '')
                 }
             });
             return expressions;
         },
-        onChange(elem, result, state) {
-            //  elem.innerText = result;
-            console.log(elem, result);
+        onChange(elem, result, { expression }) {
+            elem.setAttribute(expression.attributeName, result);
         },
     }
 });
@@ -2238,12 +2240,12 @@ directive(function styleXyz() {
     return {
         bindTo: () => {
             return Array.from(document.querySelectorAll('*')).filter(elem => {
-                const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).length > 0;
+                const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).length > 0;
                 return hasStyleKey;
             });
         },
         expressions: elem => {
-            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).map(key => elem.dataset[key]);
             return expressions;
         },
         onChange(elem, result, { property }) {
@@ -2254,17 +2256,17 @@ directive(function styleXyz() {
 
 directive(function classXyz() {
     const boundElements = Array.from(document.querySelectorAll('*')).filter(elem => {
-        const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).length > 0;
+        const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).length > 0;
         return hasClassKey;
     });
 
     return {
         bindTo: boundElements,
         expressions: elem => {
-            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).map(key => {
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                 return {
                     expression: elem.dataset[key],
-                    classname: key.replace('class.', '')
+                    classname: key.replace('class:', '')
                 }
             });
             return expressions;

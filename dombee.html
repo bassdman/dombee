@@ -8,7 +8,7 @@
 
 <body>
     <main class="main">
-        <h1 data-bind="header.headtitle"></h1>
+        <h1 data-html="header.headtitle"></h1>
         <div class="field">
             <label for="name">Enter your first name:</label>
             <input id="name" type="text" name="name" data-model="vorname" />
@@ -19,9 +19,9 @@
         </div>
 
         <div class="field">
-            <label for="title">Enter your title:</label>
+            <label for="title" data-bind:dname="vorname" :dmargin="margin">Enter your title:</label>
             <input id="title" type="text" name="title" data-model="title" />
-            <input type="checkbox" data-model="yesno"> <span data-bind="yesno"></span>
+            <input type="checkbox" data-model="yesno"> <span data-html="yesno"></span>
         </div>
 
         <div class="field">
@@ -31,14 +31,17 @@
         </div>
 
         <div class="results">
-            <h1 data-bind="name"></h1>
-            <h2 data-bind="title"></h2>
-            <h2 data-bind="thing" data-class="{abc:yesno}" data-style="{opacity: opacity + '%'}"></h2>
-            <h3 data-show="yesno" data-class="abc def ${classnames}" data-class.xyz="yesno" data-style="margin-left: ${margin}px;" data-style.opacity="${opacity}%">Wird nur bedingt angezeigt</h3>
-            <div data-bind="nested.nested2"></div>
+            <p style="background: lightgray;">innerHTML:
+                <span data-html="name"></span>
+            </p>
+            <p>innerText: <span data-text="name"></span></p>
+            <h2 data-html="title"></h2>
+            <h2 data-html="thing" data-class="{abc:yesno}" data-style="{opacity: opacity + '%'}"></h2>
+            <h3 data-show="yesno" data-class="abc def ${classnames}" data-class:xyz="yesno" data-style="margin-left: ${margin}px;" data-style:opacity="${opacity}%">Wird nur bedingt angezeigt</h3>
+            <div data-html="nested.nested2"></div>
         </div>
 
-        <h3 data-class.xyz="yesno" data-class.abc="opacity == 0">Doubleclassbinding</h3>
+        <h3 data-class:xyz="yesno" data-class:abc="opacity == 0">Doubleclassbinding</h3>
     </main>
 
     <script type="module">
@@ -51,7 +54,7 @@
                 yesno: false,
                 thing: 'auto',
                 vorname: 'Peter',
-                nachname: 'Hauenstein',
+                nachname: 'Hauen<b>stein</b>',
                 margin: 0,
                 nested: {
                     nested2: false

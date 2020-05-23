@@ -15,7 +15,7 @@ directive({
     },
 });
 
-directive(function onRenderInputElementDefault() {
+directive(function inputElementDefault() {
     return {
         bindTo: '[data-model]:not([type="radio"])',
         expressions: elem => elem.dataset.model,
@@ -25,7 +25,7 @@ directive(function onRenderInputElementDefault() {
     }
 });
 
-directive(function onRenderInputElementRadios() {
+directive(function inputElementRadios() {
     return {
         bindTo: 'input[data-model][type="radio"]',
         expressions: elem => elem.dataset.model,
@@ -36,17 +36,54 @@ directive(function onRenderInputElementRadios() {
     }
 });
 
-directive(function onRenderDataBind() {
+directive(function dataHtml() {
     return {
-        bindTo: '[data-bind]',
-        expressions: elem => elem.dataset.bind,
+        bindTo: '[data-html]',
+        expressions: elem => elem.dataset.html,
         onChange(elem, result, state) {
             elem.innerHTML = result;
         },
     }
 });
 
-directive(function onRenderDataClass() {
+directive(function dataText() {
+    return {
+        bindTo: '[data-text]',
+        expressions: elem => elem.dataset.text,
+        onChange(elem, result, state) {
+            elem.innerText = result;
+        },
+    }
+});
+
+directive(function dataBind() {
+    return {
+        bindTo: () => {
+            return Array.from(document.querySelectorAll('*')).filter(elem => {
+                const hasBindAttribute = Object.keys(elem.attributes).filter(i => {
+                    const attributeName = elem.attributes[i].name;
+                    return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
+                }).length > 0;
+                return hasBindAttribute;
+            });
+        },
+        expressions: elem => {
+            const expressions = Object.keys(elem.attributes).filter(i => elem.attributes[i].name.startsWith('data-bind:') || elem.attributes[i].name.startsWith(':')).map(i => {
+                const attributeName = elem.attributes[i].name;
+                return {
+                    expression: elem.getAttribute(attributeName),
+                    attributeName: attributeName.replace('data-bind:', '').replace(':', '')
+                }
+            });
+            return expressions;
+        },
+        onChange(elem, result, { expression }) {
+            elem.setAttribute(expression.attributeName, result);
+        },
+    }
+});
+
+directive(function dataClass() {
     return {
         expressions: elem => elem.dataset.class,
         bindTo: '[data-class]',
@@ -66,7 +103,7 @@ directive(function onRenderDataClass() {
     }
 });
 
-directive(function onRenderDataStyle() {
+directive(function dataStyle() {
     return {
         bindTo: '[data-style]',
         expressions: elem => elem.dataset.style,
@@ -82,16 +119,16 @@ directive(function onRenderDataStyle() {
     }
 });
 
-directive(function onRenderStyleXyz() {
+directive(function styleXyz() {
     return {
         bindTo: () => {
             return Array.from(document.querySelectorAll('*')).filter(elem => {
-                const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).length > 0;
+                const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).length > 0;
                 return hasStyleKey;
             });
         },
         expressions: elem => {
-            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style.')).map(key => elem.dataset[key]);
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).map(key => elem.dataset[key]);
             return expressions;
         },
         onChange(elem, result, { property }) {
@@ -100,19 +137,19 @@ directive(function onRenderStyleXyz() {
     }
 });
 
-directive(function onRenderClassXyz() {
+directive(function classXyz() {
     const boundElements = Array.from(document.querySelectorAll('*')).filter(elem => {
-        const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).length > 0;
+        const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).length > 0;
         return hasClassKey;
     });
 
     return {
         bindTo: boundElements,
         expressions: elem => {
-            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).map(key => {
+            const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                 return {
                     expression: elem.dataset[key],
-                    classname: key.replace('class.', '')
+                    classname: key.replace('class:', '')
                 }
             });
             return expressions;
@@ -126,9 +163,9 @@ directive(function onRenderClassXyz() {
     }
 });
 
-directive(function onRenderDataShow() {
+directive(function dataShow() {
     return {
-        bindTo: 'data-show',
+        bindTo: '[data-show]',
         expressions: elem => elem.dataset.show,
         onChange(elem, result) {
             elem.style.display = result ? 'block' : 'none';
@@ -157,16 +194,6 @@ onLoad(function addDataModelEvents({ state }) {
             const name = elem.dataset.model;
             state[name] = elem.checked;
         });
-    }
-});
-
-directive(function onRenderDataShow() {
-    return {
-        bindTo: 'data-show',
-        expressions: elem => elem.dataset.show,
-        onChange(elem, result) {
-            elem.style.display = result ? 'block' : 'none';
-        },
     }
 });
 
