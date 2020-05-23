@@ -5,7 +5,7 @@ describe("Dombee.directive", function() {
 
 
     // valid default-values for making the tests more clean
-    function expressions() {};
+    function expressions() { return 'x' };
 
     function onChange() {};
     const bindTo = '.abc';
@@ -61,26 +61,44 @@ describe("Dombee.directive", function() {
             Dombee.directive({ bindTo, onChange, expressions: function() { return 'abc' } });
             expect(() => Dombee({})).not.toThrow();
         });
-        it("should be valid if it is an Array of Strings", function() {
+        it("should throw an error if it is an Array", function() {
             Dombee.directive({ bindTo, onChange, expressions: ['abc'] });
-            expect(() => Dombee({})).not.toThrow();
+            expect(() => Dombee({})).toThrow();
         });
-        it("should throw an error if it is not a function, Array or String", function() {
+        it("should throw an error if it is a number", function() {
             Dombee.directive({ bindTo, onChange, expressions: 1 });
 
             expect(() => Dombee({})).toThrow();
         });
-        it("should be valid if it is an object having a key 'expression'", function() {
-            expect(() => Dombee.directive({
+        it("should throw an error if it is a function but returns null", function() {
+            Dombee.directive({ bindTo, onChange, expressions: function() {} });
+
+            expect(() => Dombee({})).toThrow();
+        });
+        it("should be valid if it is a function returning an object having a key 'expression'", function() {
+            Dombee.directive({
+                bindTo,
+                onChange,
+                expressions: () => {
+                    return {
+                        expression: 'xyz'
+                    }
+                }
+            });
+
+            expect(() => Dombee({})).not.toThrow();
+        });
+
+        it("should throw an error if it is an object having a key 'expression'", function() {
+            Dombee.directive({
                 bindTo,
                 onChange,
                 expressions: {
                     expression: 'xyz'
                 }
-            })).not.toThrow();
+            });
 
-
-            expect(() => Dombee({})).not.toThrow();
+            expect(() => Dombee({})).toThrow();
         });
     });
 

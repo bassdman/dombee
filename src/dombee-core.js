@@ -93,7 +93,7 @@ function Dombee(_state = {}) {
 
     }
 
-    function addDependencies(expressionResult, name, elemid, directive = {}, ) {
+    function addDependencies(expressionResult = "", name, elemid, directive = {}, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
         const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
@@ -175,6 +175,9 @@ function Dombee(_state = {}) {
                 expressions = [expressions];
 
             for (let expression of expressions) {
+                if (expression == null)
+                    throw new Error({ number: 'expfn-null', message: 'A Problem occured with directive ' + (directive.name || '[no name defined]') + '. One or more expressions return null but should return a String' });
+
                 addDependencies(expression, 0, elemId, directive);
             }
 

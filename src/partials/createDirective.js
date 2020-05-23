@@ -29,8 +29,8 @@ export function createDirective(config, { document, state, values }) {
         throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
     if (typeof directive.onChange !== 'function')
         throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
-    if (!(typeof directive.expressions == 'string' || typeof directive.expressions == 'function' || Array.isArray(directive.expressions) || directive.expressions.expression))
-        throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
+    if (!(typeof directive.expressions == 'function'))
+        throw new Error('Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions);
     if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
         throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
     /*

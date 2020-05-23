@@ -52,8 +52,8 @@ function createDirective(config, { document, state, values }) {
         throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
     if (typeof directive.onChange !== 'function')
         throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
-    if (!(typeof directive.expressions == 'string' || typeof directive.expressions == 'function' || Array.isArray(directive.expressions) || directive.expressions.expression))
-        throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
+    if (!(typeof directive.expressions == 'function'))
+        throw new Error('Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions);
     if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
         throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
     /*
@@ -1955,7 +1955,7 @@ function Dombee(_state = {}) {
 
     }
 
-    function addDependencies(expressionResult, name, elemid, directive = {}, ) {
+    function addDependencies(expressionResult = "", name, elemid, directive = {}, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
         const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
@@ -2034,6 +2034,9 @@ function Dombee(_state = {}) {
                 expressions = [expressions];
 
             for (let expression of expressions) {
+                if (expression == null)
+                    throw new Error({ number: 'expfn-null', message: 'A Problem occured with directive ' + (directive.name || '[no name defined]') + '. One or more expressions return null but should return a String' });
+
                 addDependencies(expression, 0, elemId, directive);
             }
 
@@ -2129,7 +2132,7 @@ directive({
     },
 });
 
-directive(function onRenderInputElementDefault() {
+directive(function inputElementDefault() {
     return {
         bindTo: '[data-model]:not([type="radio"])',
         expressions: elem => elem.dataset.model,
@@ -2139,7 +2142,7 @@ directive(function onRenderInputElementDefault() {
     }
 });
 
-directive(function onRenderInputElementRadios() {
+directive(function inputElementRadios() {
     return {
         bindTo: 'input[data-model][type="radio"]',
         expressions: elem => elem.dataset.model,
@@ -2150,17 +2153,52 @@ directive(function onRenderInputElementRadios() {
     }
 });
 
-directive(function onRenderDataBind() {
+directive(function dataHtml() {
     return {
-        bindTo: '[data-bind]',
-        expressions: elem => elem.dataset.bind,
+        bindTo: '[data-html]',
+        expressions: elem => elem.dataset.html,
         onChange(elem, result, state) {
             elem.innerHTML = result;
         },
     }
 });
 
-directive(function onRenderDataClass() {
+directive(function dataText() {
+    return {
+        bindTo: '[data-text]',
+        expressions: elem => elem.dataset.text,
+        onChange(elem, result, state) {
+            elem.innerText = result;
+        },
+    }
+});
+
+directive(function dataBind() {
+    return {
+        bindTo: () => {
+            return Array.from(document.querySelectorAll('*')).filter(elem => {
+                const hasBindAttribute = Object.keys(elem.attributes).filter(key =>
+                    key.startsWith('data-bind.') || key.startsWith(':')).length > 0;
+                return hasBindAttribute;
+            });
+        },
+        expressions: elem => {
+            const expressions = Object.keys(elem.attributes).filter(key => key.startsWith('data-bind.') || key.startsWith(':')).map(key => {
+                return {
+                    expression: elem.attributes[key],
+                    classname: key.replace('data-bind.', '')
+                }
+            });
+            return expressions;
+        },
+        onChange(elem, result, state) {
+            //  elem.innerText = result;
+            console.log(elem, result);
+        },
+    }
+});
+
+directive(function dataClass() {
     return {
         expressions: elem => elem.dataset.class,
         bindTo: '[data-class]',
@@ -2180,7 +2218,7 @@ directive(function onRenderDataClass() {
     }
 });
 
-directive(function onRenderDataStyle() {
+directive(function dataStyle() {
     return {
         bindTo: '[data-style]',
         expressions: elem => elem.dataset.style,
@@ -2196,7 +2234,7 @@ directive(function onRenderDataStyle() {
     }
 });
 
-directive(function onRenderStyleXyz() {
+directive(function styleXyz() {
     return {
         bindTo: () => {
             return Array.from(document.querySelectorAll('*')).filter(elem => {
@@ -2214,7 +2252,7 @@ directive(function onRenderStyleXyz() {
     }
 });
 
-directive(function onRenderClassXyz() {
+directive(function classXyz() {
     const boundElements = Array.from(document.querySelectorAll('*')).filter(elem => {
         const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class.')).length > 0;
         return hasClassKey;
@@ -2240,9 +2278,9 @@ directive(function onRenderClassXyz() {
     }
 });
 
-directive(function onRenderDataShow() {
+directive(function dataShow() {
     return {
-        bindTo: 'data-show',
+        bindTo: '[data-show]',
         expressions: elem => elem.dataset.show,
         onChange(elem, result) {
             elem.style.display = result ? 'block' : 'none';
@@ -2271,16 +2309,6 @@ onLoad(function addDataModelEvents({ state }) {
             const name = elem.dataset.model;
             state[name] = elem.checked;
         });
-    }
-});
-
-directive(function onRenderDataShow() {
-    return {
-        bindTo: 'data-show',
-        expressions: elem => elem.dataset.show,
-        onChange(elem, result) {
-            elem.style.display = result ? 'block' : 'none';
-        },
     }
 });
 

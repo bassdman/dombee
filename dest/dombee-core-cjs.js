@@ -54,8 +54,8 @@ function createDirective(config, { document, state, values }) {
         throw new Error('Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.');
     if (typeof directive.onChange !== 'function')
         throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
-    if (!(typeof directive.expressions == 'string' || typeof directive.expressions == 'function' || Array.isArray(directive.expressions) || directive.expressions.expression))
-        throw new Error('Dombee.directive(config) failed. config.expressions must be an Array or a function that returns an Array or a string. But it is ' + typeof config.expressions);
+    if (!(typeof directive.expressions == 'function'))
+        throw new Error('Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions);
     if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
         throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
     /*
@@ -1957,7 +1957,7 @@ function Dombee(_state = {}) {
 
     }
 
-    function addDependencies(expressionResult, name, elemid, directive = {}, ) {
+    function addDependencies(expressionResult = "", name, elemid, directive = {}, ) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
         const dependencies = exports.globalCache.dependencyEvaluationStrategy(fnText, state);
@@ -2036,6 +2036,9 @@ function Dombee(_state = {}) {
                 expressions = [expressions];
 
             for (let expression of expressions) {
+                if (expression == null)
+                    throw new Error({ number: 'expfn-null', message: 'A Problem occured with directive ' + (directive.name || '[no name defined]') + '. One or more expressions return null but should return a String' });
+
                 addDependencies(expression, 0, elemId, directive);
             }
 
