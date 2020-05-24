@@ -1,6 +1,6 @@
 import { isDomElement } from "../helpers/isDomElement";
 
-export function createDirective(config, { root, state, values }) {
+export function createDirective(config, { $root, state, values }) {
     if (config == null)
         throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
     let directive = config;
@@ -38,17 +38,17 @@ export function createDirective(config, { root, state, values }) {
     /*
         Initialize the elements attribute
     */
-    directive.elements = initElements(directive.bindTo, directive, root);
+    directive.elements = initElements(directive.bindTo, directive, $root);
 
 
     return directive;
 }
 
-function initElements(_elements, directive, root) {
+function initElements(_elements, directive, $root) {
     let elements = _elements;
 
     if (typeof elements == 'function')
-        elements = elements(root);
+        elements = elements($root);
 
     if (!elements)
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
@@ -62,7 +62,7 @@ function initElements(_elements, directive, root) {
     }
 
     if (typeof elements == 'string')
-        return root.querySelectorAll(elements) || [];
+        return $root.querySelectorAll(elements) || [];
 
     return [elements];
 }

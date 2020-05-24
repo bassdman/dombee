@@ -31,7 +31,7 @@ var Dombee = (function () {
         }
     }
 
-    function createDirective(config, { root, state, values }) {
+    function createDirective(config, { $root, state, values }) {
         if (config == null)
             throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
         let directive = config;
@@ -69,17 +69,17 @@ var Dombee = (function () {
         /*
             Initialize the elements attribute
         */
-        directive.elements = initElements(directive.bindTo, directive, root);
+        directive.elements = initElements(directive.bindTo, directive, $root);
 
 
         return directive;
     }
 
-    function initElements(_elements, directive, root) {
+    function initElements(_elements, directive, $root) {
         let elements = _elements;
 
         if (typeof elements == 'function')
-            elements = elements(root);
+            elements = elements($root);
 
         if (!elements)
             throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
@@ -93,7 +93,7 @@ var Dombee = (function () {
         }
 
         if (typeof elements == 'string')
-            return root.querySelectorAll(elements) || [];
+            return $root.querySelectorAll(elements) || [];
 
         return [elements];
     }
@@ -1884,21 +1884,21 @@ var Dombee = (function () {
     let globalCache = lodash_clonedeep(initialGlobalCache);
 
 
-    function initRoot(config) {
+    function init$root(config) {
         const _document = Dombee.documentMock || document;
 
-        let $rootElement = _document.createElement('div');
+        let $$rootElement = _document.createElement('div');
 
         if (isDomElement(config.bindTo))
-            $rootElement = config.bindTo;
+            $$rootElement = config.bindTo;
 
         if (config.bindTo)
-            $rootElement = _document.querySelector(config.bindTo);
+            $$rootElement = _document.querySelector(config.bindTo);
 
         if (config.template)
-            $rootElement.innerHTML = config.template;
+            $$rootElement.innerHTML = config.template;
 
-        return $rootElement;
+        return $$rootElement;
     }
 
 
@@ -1912,7 +1912,7 @@ var Dombee = (function () {
         };
 
         config = initConfig(config);
-        const root = initRoot(config);
+        const $root = init$root(config);
 
         const state = new Proxy(config.data, {
             set(target, property, value) {
@@ -1932,7 +1932,7 @@ var Dombee = (function () {
         });
 
         for (let onload of globalCache.events.onload) {
-            onload({ cache, state, root });
+            onload({ cache, state, $root });
         }
 
         function initConfig(config = {}) {
@@ -2044,7 +2044,7 @@ var Dombee = (function () {
 
         for (let directiveConfig of globalCache.directives) {
 
-            const directive = createDirective(directiveConfig, { root, state, values });
+            const directive = createDirective(directiveConfig, { $root, state, values });
 
             for (let elem of directive.elements) {
                 if (!elem.dataset)
@@ -2076,11 +2076,11 @@ var Dombee = (function () {
             const toUpdate = cache.dependencies[prop] || [];
             for (let updateEntry of toUpdate) {
                 const cacheUpdateEntry = cache.bindings[updateEntry];
-                const elem = root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+                const elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
                 const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
                 if (cacheUpdateEntry.onChange)
-                    cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, root });
+                    cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
             }
         };
 
@@ -2097,7 +2097,7 @@ var Dombee = (function () {
             values: values(),
             watch,
             cache,
-            root
+            $root
         }
     }
     function dependencyEvaluationStrategy(fn) {
@@ -2205,8 +2205,8 @@ var Dombee = (function () {
 
     directive(function dataBind() {
         return {
-            bindTo: (root) => {
-                return Array.from(root.querySelectorAll('*')).filter(elem => {
+            bindTo: ($root) => {
+                return Array.from($root.querySelectorAll('*')).filter(elem => {
                     const hasBindAttribute = Object.keys(elem.attributes).filter(i => {
                         const attributeName = elem.attributes[i].name;
                         return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
@@ -2268,8 +2268,8 @@ var Dombee = (function () {
 
     directive(function styleXyz() {
         return {
-            bindTo: (root) => {
-                return Array.from(root.querySelectorAll('*')).filter(elem => {
+            bindTo: ($root) => {
+                return Array.from($root.querySelectorAll('*')).filter(elem => {
                     const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).length > 0;
                     return hasStyleKey;
                 });
@@ -2286,8 +2286,8 @@ var Dombee = (function () {
 
     directive(function classXyz() {
         return {
-            bindTo: function(root) {
-                return Array.from(root.querySelectorAll('*')).filter(elem => {
+            bindTo: function($root) {
+                return Array.from($root.querySelectorAll('*')).filter(elem => {
                     const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).length > 0;
                     return hasClassKey;
                 });
@@ -2320,9 +2320,9 @@ var Dombee = (function () {
         }
     });
 
-    onLoad(function addDataModelEvents({ state, root }) {
-        const allInputsNoCheckbox = root.querySelectorAll('[data-model]:not([type="checkbox"])');
-        const allCheckboxex = root.querySelectorAll('input[data-model][type="checkbox"]');
+    onLoad(function addDataModelEvents({ state, $root }) {
+        const allInputsNoCheckbox = $root.querySelectorAll('[data-model]:not([type="checkbox"])');
+        const allCheckboxex = $root.querySelectorAll('input[data-model][type="checkbox"]');
 
         for (let elem of allInputsNoCheckbox) {
             elem.addEventListener('keyup', function() {

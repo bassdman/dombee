@@ -28,7 +28,7 @@ function isDomElement(elemToProove) {
     }
 }
 
-function createDirective(config, { root, state, values }) {
+function createDirective(config, { $root, state, values }) {
     if (config == null)
         throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
     let directive = config;
@@ -66,17 +66,17 @@ function createDirective(config, { root, state, values }) {
     /*
         Initialize the elements attribute
     */
-    directive.elements = initElements(directive.bindTo, directive, root);
+    directive.elements = initElements(directive.bindTo, directive, $root);
 
 
     return directive;
 }
 
-function initElements(_elements, directive, root) {
+function initElements(_elements, directive, $root) {
     let elements = _elements;
 
     if (typeof elements == 'function')
-        elements = elements(root);
+        elements = elements($root);
 
     if (!elements)
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
@@ -90,7 +90,7 @@ function initElements(_elements, directive, root) {
     }
 
     if (typeof elements == 'string')
-        return root.querySelectorAll(elements) || [];
+        return $root.querySelectorAll(elements) || [];
 
     return [elements];
 }
@@ -1881,21 +1881,21 @@ const initialGlobalCache = {
 let globalCache = lodash_clonedeep(initialGlobalCache);
 
 
-function initRoot(config) {
+function init$root(config) {
     const _document = Dombee.documentMock || document;
 
-    let $rootElement = _document.createElement('div');
+    let $$rootElement = _document.createElement('div');
 
     if (isDomElement(config.bindTo))
-        $rootElement = config.bindTo;
+        $$rootElement = config.bindTo;
 
     if (config.bindTo)
-        $rootElement = _document.querySelector(config.bindTo);
+        $$rootElement = _document.querySelector(config.bindTo);
 
     if (config.template)
-        $rootElement.innerHTML = config.template;
+        $$rootElement.innerHTML = config.template;
 
-    return $rootElement;
+    return $$rootElement;
 }
 
 
@@ -1909,7 +1909,7 @@ function Dombee(config) {
     };
 
     config = initConfig(config);
-    const root = initRoot(config);
+    const $root = init$root(config);
 
     const state = new Proxy(config.data, {
         set(target, property, value) {
@@ -1929,7 +1929,7 @@ function Dombee(config) {
     });
 
     for (let onload of globalCache.events.onload) {
-        onload({ cache, state, root });
+        onload({ cache, state, $root });
     }
 
     function initConfig(config = {}) {
@@ -2041,7 +2041,7 @@ function Dombee(config) {
 
     for (let directiveConfig of globalCache.directives) {
 
-        const directive = createDirective(directiveConfig, { root, state, values });
+        const directive = createDirective(directiveConfig, { $root, state, values });
 
         for (let elem of directive.elements) {
             if (!elem.dataset)
@@ -2073,11 +2073,11 @@ function Dombee(config) {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const elem = root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, root });
+                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
         }
     };
 
@@ -2094,7 +2094,7 @@ function Dombee(config) {
         values: values(),
         watch,
         cache,
-        root
+        $root
     }
 }
 function dependencyEvaluationStrategy(fn) {

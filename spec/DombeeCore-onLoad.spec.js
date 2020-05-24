@@ -20,6 +20,6 @@ describe("Dombee.onLoad", function() {
         const spyFunction = jasmine.createSpy('plugin')
         Dombee.onLoad(spyFunction);
         Dombee({});
-        expect(spyFunction).toHaveBeenCalledWith({ state: {}, cache: { _localDumbeeCache: true, bindings: {}, dependencies: {} }, root: Dombee.documentMock.createElement('div') });
+        expect(spyFunction).toHaveBeenCalledWith({ state: {}, cache: { _localDumbeeCache: true, bindings: {}, dependencies: {} }, $root: Dombee.documentMock.createElement('div') });
     });
 });
