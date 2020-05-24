@@ -22,21 +22,21 @@ const initialGlobalCache = {
 export let globalCache = cloneDeep(initialGlobalCache);
 
 
-function init$root(config) {
+function initRoot(config) {
     const _document = Dombee.documentMock || document;
 
-    let $$rootElement = _document.createElement('div');
+    let $rootElement = _document.createElement('div');
 
     if (isDomElement(config.bindTo))
-        $$rootElement = config.bindTo;
+        $rootElement = config.bindTo;
 
     if (config.bindTo)
-        $$rootElement = _document.querySelector(config.bindTo);
+        $rootElement = _document.querySelector(config.bindTo);
 
     if (config.template)
-        $$rootElement.innerHTML = config.template;
+        $rootElement.innerHTML = config.template;
 
-    return $$rootElement;
+    return $rootElement;
 }
 
 
@@ -51,7 +51,7 @@ function Dombee(config) {
     };
 
     config = initConfig(config);
-    const $root = init$root(config)
+    const $root = initRoot(config)
 
     const state = new Proxy(config.data, {
         set(target, property, value) {
@@ -184,35 +184,37 @@ function Dombee(config) {
             watched[key] = fn;
     }
 
-    for (let directiveConfig of globalCache.directives) {
+    console.log('start')
+    $root.querySelectorAll('*').forEach($elem => {
+        if (!$elem.dataset)
+            $elem.dataset = {};
 
-        const directive = createDirective(directiveConfig, { $root, state, values });
+        const elemId = $elem.dataset.id || randomId('id');
 
-        for (let $elem of directive.elements) {
-            if (!$elem.dataset)
-                $elem.dataset = {};
+        for (let directiveConfig of globalCache.directives) {
 
-            const elemId = $elem.dataset.id || randomId('id_');
-
-            if ($elem.dataset.id == null)
-                $elem.dataset.id = elemId;
+            const directive = createDirective(directiveConfig, { $root, state, values });
 
             let expressions = directive.expressions($elem);
 
-
+            if (expressions == null)
+                continue;
 
             if (!Array.isArray(expressions))
                 expressions = [expressions];
 
             for (let expression of expressions) {
-                if (expression == null)
-                    throw new Error(`A Problem occured with directive ${directive.name || '[no name defined]'}. One or more expressions return null but should return a String`);
+                if (expression) {
+                    if ($elem.dataset.id == null)
+                        $elem.dataset.id = elemId;
 
-                addDependencies(expression, 0, elemId, directive);
+                    addDependencies(expression, 0, elemId, directive);
+                }
             }
-
         }
-    }
+    })
+
+    console.log('start2')
 
     const render = (state, prop, value) => {
         const toUpdate = cache.dependencies[prop] || [];
@@ -234,6 +236,7 @@ function Dombee(config) {
         render(state, key, state[key])
     });
 
+    console.log('finished')
     return {
         state,
         values: values(),

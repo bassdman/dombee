@@ -21,14 +21,13 @@ function expressionTypeJsTemplateString(text, values) {
 
 function isDomElement(elemToProove) {
     try {
-        // var $elem = getDocument().createElement('div');
         return elemToProove.tagName != null;
     } catch (e) {
         return false;
     }
 }
 
-function createDirective(config, { $root, state, values }) {
+function createDirective(config, { state, values }) {
     if (config == null)
         throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
     let directive = config;
@@ -36,7 +35,6 @@ function createDirective(config, { $root, state, values }) {
         When the directive is wrapped in a function, unwrap this function
         Example: Dombee.directive(function testFn(){
             return {
-                bindTo: 'aselector',
                 onChange: () => { //do sth },
                 expressions: ['expression1','expression2']
             }
@@ -44,7 +42,6 @@ function createDirective(config, { $root, state, values }) {
         will result in
         {
             name: 'testFn'
-            bindTo: 'aselector',
             onChange: () => { //do sth },
             expressions: ['expression1','expression2']
         }
@@ -61,41 +58,16 @@ function createDirective(config, { $root, state, values }) {
         throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
     if (!(typeof directive.expressions == 'function'))
         throw new Error('Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions);
-    if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
-        throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
     /*
         Initialize the elements attribute
     */
-    directive.elements = initElements(directive.bindTo, directive, $root);
 
 
     return directive;
 }
 
-function initElements(_elements, directive, $root) {
-    let elements = _elements;
-
-    if (typeof elements == 'function')
-        elements = elements($root);
-
-    if (!elements)
-        throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
-
-    if (Array.isArray(elements)) {
-        for (let $elem of elements) {
-            if (!isDomElement($elem) && !typeof $elem.expression == 'string')
-                throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${$elem}`);
-        }
-        return elements;
-    }
-
-    if (typeof elements == 'string')
-        return $root.querySelectorAll(elements) || [];
-
-    return [elements];
-}
-
 function randomId(prefix = "") {
+
     return prefix + Math.random().toString(36).substring(2, 15);
 }
 
@@ -1881,21 +1853,21 @@ const initialGlobalCache = {
 let globalCache = lodash_clonedeep(initialGlobalCache);
 
 
-function init$root(config) {
+function initRoot(config) {
     const _document = Dombee.documentMock || document;
 
-    let $$rootElement = _document.createElement('div');
+    let $rootElement = _document.createElement('div');
 
     if (isDomElement(config.bindTo))
-        $$rootElement = config.bindTo;
+        $rootElement = config.bindTo;
 
     if (config.bindTo)
-        $$rootElement = _document.querySelector(config.bindTo);
+        $rootElement = _document.querySelector(config.bindTo);
 
     if (config.template)
-        $$rootElement.innerHTML = config.template;
+        $rootElement.innerHTML = config.template;
 
-    return $$rootElement;
+    return $rootElement;
 }
 
 
@@ -1909,7 +1881,7 @@ function Dombee(config) {
     };
 
     config = initConfig(config);
-    const $root = init$root(config);
+    const $root = initRoot(config);
 
     const state = new Proxy(config.data, {
         set(target, property, value) {
@@ -2039,35 +2011,37 @@ function Dombee(config) {
     function watch(key, fn) {
     }
 
-    for (let directiveConfig of globalCache.directives) {
+    console.log('start');
+    $root.querySelectorAll('*').forEach($elem => {
+        if (!$elem.dataset)
+            $elem.dataset = {};
 
-        const directive = createDirective(directiveConfig, { $root, state, values });
+        const elemId = $elem.dataset.id || randomId('id');
 
-        for (let $elem of directive.elements) {
-            if (!$elem.dataset)
-                $elem.dataset = {};
+        for (let directiveConfig of globalCache.directives) {
 
-            const elemId = $elem.dataset.id || randomId('id_');
-
-            if ($elem.dataset.id == null)
-                $elem.dataset.id = elemId;
+            const directive = createDirective(directiveConfig, { $root, state, values });
 
             let expressions = directive.expressions($elem);
 
-
+            if (expressions == null)
+                continue;
 
             if (!Array.isArray(expressions))
                 expressions = [expressions];
 
             for (let expression of expressions) {
-                if (expression == null)
-                    throw new Error(`A Problem occured with directive ${directive.name || '[no name defined]'}. One or more expressions return null but should return a String`);
+                if (expression) {
+                    if ($elem.dataset.id == null)
+                        $elem.dataset.id = elemId;
 
-                addDependencies(expression, 0, elemId, directive);
+                    addDependencies(expression, 0, elemId, directive);
+                }
             }
-
         }
-    }
+    });
+
+    console.log('start2');
 
     const render = (state, prop, value) => {
         const toUpdate = cache.dependencies[prop] || [];
@@ -2089,6 +2063,7 @@ function Dombee(config) {
         render(state, key, state[key]);
     });
 
+    console.log('finished');
     return {
         state,
         values: values(),

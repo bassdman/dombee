@@ -30,7 +30,6 @@ function isDomElement(elemToProove) {
 
 function textDirective() {
     return {
-        bindTo: '[data-text]',
         expressions: $elem => $elem.dataset.text,
         onChange($elem, result, state) {
             $elem.innerText = result;

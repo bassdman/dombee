@@ -24,14 +24,13 @@ var Dombee = (function () {
 
     function isDomElement(elemToProove) {
         try {
-            // var $elem = getDocument().createElement('div');
             return elemToProove.tagName != null;
         } catch (e) {
             return false;
         }
     }
 
-    function createDirective(config, { $root, state, values }) {
+    function createDirective(config, { state, values }) {
         if (config == null)
             throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');
         let directive = config;
@@ -39,7 +38,6 @@ var Dombee = (function () {
             When the directive is wrapped in a function, unwrap this function
             Example: Dombee.directive(function testFn(){
                 return {
-                    bindTo: 'aselector',
                     onChange: () => { //do sth },
                     expressions: ['expression1','expression2']
                 }
@@ -47,7 +45,6 @@ var Dombee = (function () {
             will result in
             {
                 name: 'testFn'
-                bindTo: 'aselector',
                 onChange: () => { //do sth },
                 expressions: ['expression1','expression2']
             }
@@ -64,41 +61,16 @@ var Dombee = (function () {
             throw new Error('Dombee.directive(config) failed. config.onChange must be a function.');
         if (!(typeof directive.expressions == 'function'))
             throw new Error('Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions);
-        if (!(typeof directive.bindTo == 'string' || typeof directive.bindTo == 'function' || Array.isArray(directive.bindTo)))
-            throw new Error('Dombee.directive(config) failed. config.bindTo must be an Array, a String or a function that returns an Array or a string. But it is ' + typeof config.bindTo);
         /*
             Initialize the elements attribute
         */
-        directive.elements = initElements(directive.bindTo, directive, $root);
 
 
         return directive;
     }
 
-    function initElements(_elements, directive, $root) {
-        let elements = _elements;
-
-        if (typeof elements == 'function')
-            elements = elements($root);
-
-        if (!elements)
-            throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
-
-        if (Array.isArray(elements)) {
-            for (let $elem of elements) {
-                if (!isDomElement($elem) && !typeof $elem.expression == 'string')
-                    throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${$elem}`);
-            }
-            return elements;
-        }
-
-        if (typeof elements == 'string')
-            return $root.querySelectorAll(elements) || [];
-
-        return [elements];
-    }
-
     function randomId(prefix = "") {
+
         return prefix + Math.random().toString(36).substring(2, 15);
     }
 
@@ -1884,21 +1856,21 @@ var Dombee = (function () {
     let globalCache = lodash_clonedeep(initialGlobalCache);
 
 
-    function init$root(config) {
+    function initRoot(config) {
         const _document = Dombee.documentMock || document;
 
-        let $$rootElement = _document.createElement('div');
+        let $rootElement = _document.createElement('div');
 
         if (isDomElement(config.bindTo))
-            $$rootElement = config.bindTo;
+            $rootElement = config.bindTo;
 
         if (config.bindTo)
-            $$rootElement = _document.querySelector(config.bindTo);
+            $rootElement = _document.querySelector(config.bindTo);
 
         if (config.template)
-            $$rootElement.innerHTML = config.template;
+            $rootElement.innerHTML = config.template;
 
-        return $$rootElement;
+        return $rootElement;
     }
 
 
@@ -1912,7 +1884,7 @@ var Dombee = (function () {
         };
 
         config = initConfig(config);
-        const $root = init$root(config);
+        const $root = initRoot(config);
 
         const state = new Proxy(config.data, {
             set(target, property, value) {
@@ -2042,35 +2014,37 @@ var Dombee = (function () {
         function watch(key, fn) {
         }
 
-        for (let directiveConfig of globalCache.directives) {
+        console.log('start');
+        $root.querySelectorAll('*').forEach($elem => {
+            if (!$elem.dataset)
+                $elem.dataset = {};
 
-            const directive = createDirective(directiveConfig, { $root, state, values });
+            const elemId = $elem.dataset.id || randomId('id');
 
-            for (let $elem of directive.elements) {
-                if (!$elem.dataset)
-                    $elem.dataset = {};
+            for (let directiveConfig of globalCache.directives) {
 
-                const elemId = $elem.dataset.id || randomId('id_');
-
-                if ($elem.dataset.id == null)
-                    $elem.dataset.id = elemId;
+                const directive = createDirective(directiveConfig, { $root, state, values });
 
                 let expressions = directive.expressions($elem);
 
-
+                if (expressions == null)
+                    continue;
 
                 if (!Array.isArray(expressions))
                     expressions = [expressions];
 
                 for (let expression of expressions) {
-                    if (expression == null)
-                        throw new Error(`A Problem occured with directive ${directive.name || '[no name defined]'}. One or more expressions return null but should return a String`);
+                    if (expression) {
+                        if ($elem.dataset.id == null)
+                            $elem.dataset.id = elemId;
 
-                    addDependencies(expression, 0, elemId, directive);
+                        addDependencies(expression, 0, elemId, directive);
+                    }
                 }
-
             }
-        }
+        });
+
+        console.log('start2');
 
         const render = (state, prop, value) => {
             const toUpdate = cache.dependencies[prop] || [];
@@ -2092,6 +2066,7 @@ var Dombee = (function () {
             render(state, key, state[key]);
         });
 
+        console.log('finished');
         return {
             state,
             values: values(),
@@ -2152,8 +2127,15 @@ var Dombee = (function () {
 
     directive({
         name: 'inputElementCheckboxes',
-        bindTo: 'input[data-model][type="checkbox"]',
-        expressions: $elem => $elem.dataset.model,
+        expressions: $elem => {
+            if (!$elem.tagName == 'input')
+                return;
+
+            if ($elem.getAttribute("type") != 'checkbox')
+                return;
+
+            return $elem.dataset.model;
+        },
         onChange($elem, result, { property, value }) {
             if (value)
                 $elem.setAttribute('checked', 'checked');
@@ -2164,8 +2146,15 @@ var Dombee = (function () {
 
     directive(function inputElementDefault() {
         return {
-            bindTo: '[data-model]:not([type="radio"])',
-            expressions: $elem => $elem.dataset.model,
+            expressions: $elem => {
+                if (!$elem.tagName == 'input')
+                    return;
+
+                if ($elem.getAttribute("type") == 'radio')
+                    return;
+
+                return $elem.dataset.model;
+            },
             onChange($elem, result, { property, value }) {
                 $elem.value = value;
             },
@@ -2174,8 +2163,15 @@ var Dombee = (function () {
 
     directive(function inputElementRadios() {
         return {
-            bindTo: 'input[data-model][type="radio"]',
-            expressions: $elem => $elem.dataset.model,
+            expressions: $elem => {
+                if (!$elem.tagName == 'input')
+                    return;
+
+                if ($elem.getAttribute("type") !== 'radio')
+                    return;
+
+                return $elem.dataset.model;
+            },
             onChange($elem, result, { property, value }) {
                 if ($elem.value == value)
                     $elem.setAttribute('checked', 'checked');
@@ -2205,15 +2201,6 @@ var Dombee = (function () {
 
     directive(function dataBind() {
         return {
-            bindTo: ($root) => {
-                return Array.from($root.querySelectorAll('*')).filter($elem => {
-                    const hasBindAttribute = Object.keys($elem.attributes).filter(i => {
-                        const attributeName = $elem.attributes[i].name;
-                        return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
-                    }).length > 0;
-                    return hasBindAttribute;
-                });
-            },
             expressions: $elem => {
                 const expressions = Object.keys($elem.attributes).filter(i => $elem.attributes[i].name.startsWith('data-bind:') || $elem.attributes[i].name.startsWith(':')).map(i => {
                     const attributeName = $elem.attributes[i].name;
@@ -2233,7 +2220,6 @@ var Dombee = (function () {
     directive(function dataClass() {
         return {
             expressions: $elem => $elem.dataset.class,
-            bindTo: '[data-class]',
             onChange($elem, result, state) {
                 if (typeof result == 'object') {
                     Object.keys(result).forEach(key => {
@@ -2252,7 +2238,6 @@ var Dombee = (function () {
 
     directive(function dataStyle() {
         return {
-            bindTo: '[data-style]',
             expressions: $elem => $elem.dataset.style,
             onChange($elem, result, state) {
                 if (typeof result == 'object') {
@@ -2268,12 +2253,6 @@ var Dombee = (function () {
 
     directive(function styleXyz() {
         return {
-            bindTo: ($root) => {
-                return Array.from($root.querySelectorAll('*')).filter($elem => {
-                    const hasStyleKey = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).length > 0;
-                    return hasStyleKey;
-                });
-            },
             expressions: $elem => {
                 const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).map(key => $elem.dataset[key]);
                 return expressions;
@@ -2286,12 +2265,6 @@ var Dombee = (function () {
 
     directive(function classXyz() {
         return {
-            bindTo: function($root) {
-                return Array.from($root.querySelectorAll('*')).filter($elem => {
-                    const hasClassKey = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).length > 0;
-                    return hasClassKey;
-                });
-            },
             expressions: $elem => {
                 const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                     return {
@@ -2312,7 +2285,6 @@ var Dombee = (function () {
 
     directive(function dataShow() {
         return {
-            bindTo: '[data-show]',
             expressions: $elem => $elem.dataset.show,
             onChange($elem, result) {
                 $elem.style.display = result ? 'block' : 'none';

@@ -1,12 +1,16 @@
 import { directive, Dombee, onLoad } from './dombee-core.js';
 
-
-
-
 directive({
     name: 'inputElementCheckboxes',
-    bindTo: 'input[data-model][type="checkbox"]',
-    expressions: $elem => $elem.dataset.model,
+    expressions: $elem => {
+        if (!$elem.tagName == 'input')
+            return;
+
+        if ($elem.getAttribute("type") != 'checkbox')
+            return;
+
+        return $elem.dataset.model;
+    },
     onChange($elem, result, { property, value }) {
         if (value)
             $elem.setAttribute('checked', 'checked');
@@ -17,8 +21,15 @@ directive({
 
 directive(function inputElementDefault() {
     return {
-        bindTo: '[data-model]:not([type="radio"])',
-        expressions: $elem => $elem.dataset.model,
+        expressions: $elem => {
+            if (!$elem.tagName == 'input')
+                return;
+
+            if ($elem.getAttribute("type") == 'radio')
+                return;
+
+            return $elem.dataset.model;
+        },
         onChange($elem, result, { property, value }) {
             $elem.value = value;
         },
@@ -27,8 +38,15 @@ directive(function inputElementDefault() {
 
 directive(function inputElementRadios() {
     return {
-        bindTo: 'input[data-model][type="radio"]',
-        expressions: $elem => $elem.dataset.model,
+        expressions: $elem => {
+            if (!$elem.tagName == 'input')
+                return;
+
+            if ($elem.getAttribute("type") !== 'radio')
+                return;
+
+            return $elem.dataset.model;
+        },
         onChange($elem, result, { property, value }) {
             if ($elem.value == value)
                 $elem.setAttribute('checked', 'checked');
@@ -58,15 +76,6 @@ directive(function dataText() {
 
 directive(function dataBind() {
     return {
-        bindTo: ($root) => {
-            return Array.from($root.querySelectorAll('*')).filter($elem => {
-                const hasBindAttribute = Object.keys($elem.attributes).filter(i => {
-                    const attributeName = $elem.attributes[i].name;
-                    return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
-                }).length > 0;
-                return hasBindAttribute;
-            });
-        },
         expressions: $elem => {
             const expressions = Object.keys($elem.attributes).filter(i => $elem.attributes[i].name.startsWith('data-bind:') || $elem.attributes[i].name.startsWith(':')).map(i => {
                 const attributeName = $elem.attributes[i].name;
@@ -86,7 +95,6 @@ directive(function dataBind() {
 directive(function dataClass() {
     return {
         expressions: $elem => $elem.dataset.class,
-        bindTo: '[data-class]',
         onChange($elem, result, state) {
             if (typeof result == 'object') {
                 Object.keys(result).forEach(key => {
@@ -105,7 +113,6 @@ directive(function dataClass() {
 
 directive(function dataStyle() {
     return {
-        bindTo: '[data-style]',
         expressions: $elem => $elem.dataset.style,
         onChange($elem, result, state) {
             if (typeof result == 'object') {
@@ -121,12 +128,6 @@ directive(function dataStyle() {
 
 directive(function styleXyz() {
     return {
-        bindTo: ($root) => {
-            return Array.from($root.querySelectorAll('*')).filter($elem => {
-                const hasStyleKey = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).length > 0;
-                return hasStyleKey;
-            });
-        },
         expressions: $elem => {
             const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).map(key => $elem.dataset[key]);
             return expressions;
@@ -139,12 +140,6 @@ directive(function styleXyz() {
 
 directive(function classXyz() {
     return {
-        bindTo: function($root) {
-            return Array.from($root.querySelectorAll('*')).filter($elem => {
-                const hasClassKey = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).length > 0;
-                return hasClassKey;
-            });
-        },
         expressions: $elem => {
             const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                 return {
@@ -165,7 +160,6 @@ directive(function classXyz() {
 
 directive(function dataShow() {
     return {
-        bindTo: '[data-show]',
         expressions: $elem => $elem.dataset.show,
         onChange($elem, result) {
             $elem.style.display = result ? 'block' : 'none';
