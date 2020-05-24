@@ -71,7 +71,7 @@ function Dombee(config) {
     });
 
     for (let onload of globalCache.events.onload) {
-        onload({ cache, state });
+        onload({ cache, state, root });
     }
 
     function initConfig(config = {}) {
@@ -222,7 +222,7 @@ function Dombee(config) {
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
+                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, root });
         }
     };
 

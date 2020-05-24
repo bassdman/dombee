@@ -25,6 +25,11 @@ describe("Dombee.directive", function() {
         expect(() => Dombee(defaultConfig)).not.toThrow();
     });
 
+    it("should not throw an error if Directive is not found in DOM", function() {
+        Dombee.directive(function() { return { bindTo: '.thisClassDoesNotExist', onChange, expressions } });
+        expect(() => Dombee({ renderTo: 'body', data: { name: 'test' } })).not.toThrow();
+    });
+
     describe('with object as parameter', function() {
         it("should throw an error if property 'onChange' is null", function() {
             Dombee.directive({ expressions, bindTo });

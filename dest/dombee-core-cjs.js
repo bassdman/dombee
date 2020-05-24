@@ -80,7 +80,7 @@ function initElements(_elements, directive, root) {
     let elements = _elements;
 
     if (typeof elements == 'function')
-        elements = elements();
+        elements = elements(root);
 
     if (!elements)
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
@@ -1933,7 +1933,7 @@ function Dombee(config) {
     });
 
     for (let onload of exports.globalCache.events.onload) {
-        onload({ cache, state });
+        onload({ cache, state, root });
     }
 
     function initConfig(config = {}) {
@@ -2081,7 +2081,7 @@ function Dombee(config) {
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
+                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, root });
         }
     };
 

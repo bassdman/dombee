@@ -31,7 +31,7 @@
         </div>
 
         <div class="results">
-            <p style="background: lightgray;">innerHTML:
+            <p>innerHTML:
                 <span data-html="name"></span>
             </p>
             <p>innerText: <span data-text="name"></span></p>
@@ -51,6 +51,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             window.bindings = new Dombee({
+                renderTo: 'body',
                 data: {
                     yesno: false,
                     thing: 'auto',

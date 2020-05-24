@@ -78,7 +78,7 @@ function initElements(_elements, directive, root) {
     let elements = _elements;
 
     if (typeof elements == 'function')
-        elements = elements();
+        elements = elements(root);
 
     if (!elements)
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
@@ -1931,7 +1931,7 @@ function Dombee(config) {
     });
 
     for (let onload of globalCache.events.onload) {
-        onload({ cache, state });
+        onload({ cache, state, root });
     }
 
     function initConfig(config = {}) {
@@ -2079,7 +2079,7 @@ function Dombee(config) {
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression });
+                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, root });
         }
     };
 
@@ -2204,8 +2204,8 @@ directive(function dataText() {
 
 directive(function dataBind() {
     return {
-        bindTo: () => {
-            return Array.from(document.querySelectorAll('*')).filter(elem => {
+        bindTo: (root) => {
+            return Array.from(root.querySelectorAll('*')).filter(elem => {
                 const hasBindAttribute = Object.keys(elem.attributes).filter(i => {
                     const attributeName = elem.attributes[i].name;
                     return attributeName.startsWith('data-bind:') || attributeName.startsWith(':');
@@ -2267,8 +2267,8 @@ directive(function dataStyle() {
 
 directive(function styleXyz() {
     return {
-        bindTo: () => {
-            return Array.from(document.querySelectorAll('*')).filter(elem => {
+        bindTo: (root) => {
+            return Array.from(root.querySelectorAll('*')).filter(elem => {
                 const hasStyleKey = Object.keys(elem.dataset).filter(key => key.startsWith('style:')).length > 0;
                 return hasStyleKey;
             });
@@ -2284,13 +2284,13 @@ directive(function styleXyz() {
 });
 
 directive(function classXyz() {
-    const boundElements = Array.from(document.querySelectorAll('*')).filter(elem => {
-        const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).length > 0;
-        return hasClassKey;
-    });
-
     return {
-        bindTo: boundElements,
+        bindTo: function(root) {
+            return Array.from(root.querySelectorAll('*')).filter(elem => {
+                const hasClassKey = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).length > 0;
+                return hasClassKey;
+            });
+        },
         expressions: elem => {
             const expressions = Object.keys(elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                 return {
@@ -2319,9 +2319,9 @@ directive(function dataShow() {
     }
 });
 
-onLoad(function addDataModelEvents({ state }) {
-    const allInputsNoCheckbox = document.querySelectorAll('[data-model]:not([type="checkbox"])');
-    const allCheckboxex = document.querySelectorAll('input[data-model][type="checkbox"]');
+onLoad(function addDataModelEvents({ state, root }) {
+    const allInputsNoCheckbox = root.querySelectorAll('[data-model]:not([type="checkbox"])');
+    const allCheckboxex = root.querySelectorAll('input[data-model][type="checkbox"]');
 
     for (let elem of allInputsNoCheckbox) {
         elem.addEventListener('keyup', function() {
