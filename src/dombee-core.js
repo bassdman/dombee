@@ -188,16 +188,16 @@ function Dombee(config) {
 
         const directive = createDirective(directiveConfig, { $root, state, values });
 
-        for (let elem of directive.elements) {
-            if (!elem.dataset)
-                elem.dataset = {};
+        for (let $elem of directive.elements) {
+            if (!$elem.dataset)
+                $elem.dataset = {};
 
-            const elemId = elem.dataset.id || randomId('id_');
+            const elemId = $elem.dataset.id || randomId('id_');
 
-            if (elem.dataset.id == null)
-                elem.dataset.id = elemId;
+            if ($elem.dataset.id == null)
+                $elem.dataset.id = elemId;
 
-            let expressions = directive.expressions(elem);
+            let expressions = directive.expressions($elem);
 
 
 
@@ -218,11 +218,11 @@ function Dombee(config) {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const $elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
         }
     };
 

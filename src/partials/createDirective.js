@@ -54,9 +54,9 @@ function initElements(_elements, directive, $root) {
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
 
     if (Array.isArray(elements)) {
-        for (let elem of elements) {
-            if (!isDomElement(elem) && !typeof elem.expression == 'string')
-                throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
+        for (let $elem of elements) {
+            if (!isDomElement($elem) && !typeof $elem.expression == 'string')
+                throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${$elem}`);
         }
         return elements;
     }

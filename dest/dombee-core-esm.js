@@ -21,7 +21,7 @@ function expressionTypeJsTemplateString(text, values) {
 
 function isDomElement(elemToProove) {
     try {
-        // var elem = getDocument().createElement('div');
+        // var $elem = getDocument().createElement('div');
         return elemToProove.tagName != null;
     } catch (e) {
         return false;
@@ -82,9 +82,9 @@ function initElements(_elements, directive, $root) {
         throw new Error(`Dombee.directive(config) failed for directive ${directive.name}. config.bindTo returns null but should return a selector, element, Array of elements or function that returns one of these.`);
 
     if (Array.isArray(elements)) {
-        for (let elem of elements) {
-            if (!isDomElement(elem) && !typeof elem.expression == 'string')
-                throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${elem}`);
+        for (let $elem of elements) {
+            if (!isDomElement($elem) && !typeof $elem.expression == 'string')
+                throw new Error(`Error in function Dombee.directive(config). config.bindTo returns an Array, but with invalid elements. Only DOMElements are allowed. But it has ${$elem}`);
         }
         return elements;
     }
@@ -2043,16 +2043,16 @@ function Dombee(config) {
 
         const directive = createDirective(directiveConfig, { $root, state, values });
 
-        for (let elem of directive.elements) {
-            if (!elem.dataset)
-                elem.dataset = {};
+        for (let $elem of directive.elements) {
+            if (!$elem.dataset)
+                $elem.dataset = {};
 
-            const elemId = elem.dataset.id || randomId('id_');
+            const elemId = $elem.dataset.id || randomId('id_');
 
-            if (elem.dataset.id == null)
-                elem.dataset.id = elemId;
+            if ($elem.dataset.id == null)
+                $elem.dataset.id = elemId;
 
-            let expressions = directive.expressions(elem);
+            let expressions = directive.expressions($elem);
 
 
 
@@ -2073,11 +2073,11 @@ function Dombee(config) {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const $elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
             const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange(elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
         }
     };
 
