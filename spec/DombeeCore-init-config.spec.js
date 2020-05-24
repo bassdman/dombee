@@ -13,18 +13,23 @@ const renderHTML = `<html>
     </body>
 </html>`;
 
-fdescribe("Dombee({})", function() {
+describe("Dombee({})", function() {
 
     beforeEach(function() {
         Dombee = getDombeeCoreInstance(renderHTML);
         Dombee.reset();
+        Dombee.directive(textDirective);
+    });
+
+    it("should not throw an error if Dombee is called without args", function() {
+        expect(() => Dombee()).not.toThrow();
+    });
+    it("should have empty root element if called with empty constructor", function() {
+        const instance = Dombee();
+        expect(instance.root.outerHTML).toBe('<div></div>');
     });
 
     describe("attribute {renderTo:''}", function() {
-        beforeEach(function() {
-            Dombee.directive(textDirective);
-        });
-
         it("should return a propery called 'root'", function() {
             const instance = Dombee({ data });
             expect(instance.root).toBeDefined();
@@ -33,33 +38,35 @@ fdescribe("Dombee({})", function() {
             const instance = Dombee({ data });
             expect(isDomElement(instance.root)).toBeTrue();
         });
-        it("should return the Root-Element if configuration property 'renderTo' is undefined", function() {
+        it("should return an empty DIV-Element if configuration property 'renderTo' is undefined", function() {
             const instance = Dombee({ data });
-            expect(instance.root.tagName).toBe('HTML');
+            expect(instance.root.outerHTML).toBe('<div></div>');
         });
         it("should return the tag with id 'content1' for configuration {renderTo: '#content1'}", function() {
             const instance = Dombee({ data, renderTo: '#content1' });
             expect(instance.root.id).toBe('content1');
         });
 
-        it("should render only #text1 for config {data:{name:'test'}} - renderTo=undefined", function() {
-            const instance = Dombee({ data: { name: 'test' } });
-            const found = instance.root.querySelectorAll('[data-text]').length;
-            const textValue1 = Dombee.document.querySelectorAll('[data-text]')[0].innerText;
-            const textValue2 = Dombee.document.querySelectorAll('[data-text]')[1].innerText;
-            expect(found).toBe(2);
-            expect(textValue1).toBe('test');
-            expect(textValue2).toBe('test');
-        });
-
         it("should render #text1 for config {data:{name:'test'},renderTo:'#content2'}", function() {
             const instance = Dombee({ data: { name: 'test' }, renderTo: '#content2' });
             const found = instance.root.querySelectorAll('[data-text]').length;
-            const textValue1 = Dombee.document.querySelectorAll('[data-text]')[0].innerText;
-            const textValue2 = Dombee.document.querySelectorAll('[data-text]')[1].innerText;
+            const textValue1 = Dombee.documentMock.querySelectorAll('[data-text]')[0].innerText;
+            const textValue2 = Dombee.documentMock.querySelectorAll('[data-text]')[1].innerText;
             expect(found).toBe(1);
             expect(textValue1).toBeUndefined();
             expect(textValue2).toBe('test');
+        });
+    })
+
+    describe("attribute {template:''}", function() {
+        it("should have a root-Element with outerHTML '<span></span>' if template is <span></span>", function() {
+            const instance = Dombee({ template: '<span></span>' });
+            expect(instance.root.innerHTML).toBe('<span></span>');
+        });
+        it("should render the '<span></span>' into #content1 if both template and renderTo are defined", function() {
+            Dombee({ template: '<span></span>', renderTo: '#content1' });
+            const $content1Element = Dombee.documentMock.getElementById('content1');
+            expect($content1Element.innerHTML).toBe('<span></span>');
         });
     })
 });

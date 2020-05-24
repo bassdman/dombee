@@ -23,17 +23,25 @@ export let globalCache = cloneDeep(initialGlobalCache);
 
 
 function initRoot(config) {
-    const _document = Dombee.document || document;
+    const _document = Dombee.documentMock || document;
+
+    let $rootElement = _document.createElement('div');
+
     if (isDomElement(config.renderTo))
-        return config.renderTo;
+        $rootElement = config.renderTo;
 
     if (config.renderTo)
-        return _document.querySelector(config.renderTo);
+        $rootElement = _document.querySelector(config.renderTo);
 
-    return _document.documentElement;
+    if (config.template)
+        $rootElement.innerHTML = config.template;
+
+    return $rootElement;
 }
 
-function Dombee(config = { data: {} }) {
+
+
+function Dombee(config) {
     const watched = {};
 
     const cache = {
@@ -42,6 +50,7 @@ function Dombee(config = { data: {} }) {
         dependencies: {}
     };
 
+    config = initConfig(config);
     const root = initRoot(config)
 
     const state = new Proxy(config.data, {
@@ -63,6 +72,13 @@ function Dombee(config = { data: {} }) {
 
     for (let onload of globalCache.events.onload) {
         onload({ cache, state });
+    }
+
+    function initConfig(config = {}) {
+        if (config.data == undefined)
+            config.data = {};
+
+        return config;
     }
 
     function compute(text = '', expressionTypes) {
@@ -182,12 +198,15 @@ function Dombee(config = { data: {} }) {
                 elem.dataset.id = elemId;
 
             let expressions = directive.expressions(elem);
+
+
+
             if (!Array.isArray(expressions))
                 expressions = [expressions];
 
             for (let expression of expressions) {
                 if (expression == null)
-                    throw new Error({ number: 'expfn-null', message: 'A Problem occured with directive ' + (directive.name || '[no name defined]') + '. One or more expressions return null but should return a String' });
+                    throw new Error(`A Problem occured with directive ${directive.name || '[no name defined]'}. One or more expressions return null but should return a String`);
 
                 addDependencies(expression, 0, elemId, directive);
             }

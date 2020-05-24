@@ -51,30 +51,34 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             window.bindings = new Dombee({
-                yesno: false,
-                thing: 'auto',
-                vorname: 'Peter',
-                nachname: 'Hauen<b>stein</b>',
-                margin: 0,
-                nested: {
-                    nested2: false
-                },
-                opacity(state) {
-                    return 100 - state.margin;
-                },
-                name: function(state) {
-                    return state.vorname + ' ' + state.nachname
-                },
-                classnames: function(state) {
-                    return state.vorname.toLowerCase();
-                },
-                header: {
-                    headtitle: "headtitle"
-                },
-                title: 'HelloWorld!'
+                data: {
+                    yesno: false,
+                    thing: 'auto',
+                    vorname: 'Peter',
+                    nachname: 'Hauen<b>stein</b>',
+                    margin: 0,
+                    nested: {
+                        nested2: false
+                    },
+                    opacity(state) {
+                        return 100 - state.margin;
+                    },
+                    name: function(state) {
+                        return state.vorname + ' ' + state.nachname
+                    },
+                    classnames: function(state) {
+                        return state.vorname.toLowerCase();
+                    },
+                    header: {
+                        headtitle: "headtitle"
+                    },
+                    title: 'HelloWorld!'
+                }
             });
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
 </body>
 
 </html>
