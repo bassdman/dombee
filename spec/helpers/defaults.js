@@ -1,4 +1,4 @@
-exports.defaultConfig = { renderTo: 'body' }
+exports.defaultConfig = { bindTo: 'body' }
 
 exports.expressions = function expressions() { return 'x' };
 

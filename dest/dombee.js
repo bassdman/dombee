@@ -1889,11 +1889,11 @@ var Dombee = (function () {
 
         let $rootElement = _document.createElement('div');
 
-        if (isDomElement(config.renderTo))
-            $rootElement = config.renderTo;
+        if (isDomElement(config.bindTo))
+            $rootElement = config.bindTo;
 
-        if (config.renderTo)
-            $rootElement = _document.querySelector(config.renderTo);
+        if (config.bindTo)
+            $rootElement = _document.querySelector(config.bindTo);
 
         if (config.template)
             $rootElement.innerHTML = config.template;

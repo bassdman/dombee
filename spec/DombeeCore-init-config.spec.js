@@ -29,7 +29,7 @@ describe("Dombee({})", function() {
         expect(instance.root.outerHTML).toBe('<div></div>');
     });
 
-    describe("attribute {renderTo:''}", function() {
+    describe("attribute {bindTo:''}", function() {
         it("should return a propery called 'root'", function() {
             const instance = Dombee({ data });
             expect(instance.root).toBeDefined();
@@ -38,17 +38,17 @@ describe("Dombee({})", function() {
             const instance = Dombee({ data });
             expect(isDomElement(instance.root)).toBeTrue();
         });
-        it("should return an empty DIV-Element if configuration property 'renderTo' is undefined", function() {
+        it("should return an empty DIV-Element if configuration property 'bindTo' is undefined", function() {
             const instance = Dombee({ data });
             expect(instance.root.outerHTML).toBe('<div></div>');
         });
-        it("should return the tag with id 'content1' for configuration {renderTo: '#content1'}", function() {
-            const instance = Dombee({ data, renderTo: '#content1' });
+        it("should return the tag with id 'content1' for configuration {bindTo: '#content1'}", function() {
+            const instance = Dombee({ data, bindTo: '#content1' });
             expect(instance.root.id).toBe('content1');
         });
 
-        it("should render #text1 for config {data:{name:'test'},renderTo:'#content2'}", function() {
-            const instance = Dombee({ data: { name: 'test' }, renderTo: '#content2' });
+        it("should render #text1 for config {data:{name:'test'},bindTo:'#content2'}", function() {
+            const instance = Dombee({ data: { name: 'test' }, bindTo: '#content2' });
             const found = instance.root.querySelectorAll('[data-text]').length;
             const textValue1 = Dombee.documentMock.querySelectorAll('[data-text]')[0].innerText;
             const textValue2 = Dombee.documentMock.querySelectorAll('[data-text]')[1].innerText;
@@ -63,8 +63,8 @@ describe("Dombee({})", function() {
             const instance = Dombee({ template: '<span></span>' });
             expect(instance.root.innerHTML).toBe('<span></span>');
         });
-        it("should render the '<span></span>' into #content1 if both template and renderTo are defined", function() {
-            Dombee({ template: '<span></span>', renderTo: '#content1' });
+        it("should render the '<span></span>' into #content1 if both template and bindTo are defined", function() {
+            Dombee({ template: '<span></span>', bindTo: '#content1' });
             const $content1Element = Dombee.documentMock.getElementById('content1');
             expect($content1Element.innerHTML).toBe('<span></span>');
         });
