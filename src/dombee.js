@@ -2,6 +2,7 @@ import { directive, Dombee, onLoad } from './dombee-core.js';
 
 directive({
     name: 'inputElementCheckboxes',
+    bindTo: 'data-model',
     expressions: $elem => {
         if (!$elem.tagName == 'input')
             return;
@@ -21,6 +22,7 @@ directive({
 
 directive(function inputElementDefault() {
     return {
+        bindTo: 'data-model',
         expressions: $elem => {
             if (!$elem.tagName == 'input')
                 return;
@@ -38,6 +40,7 @@ directive(function inputElementDefault() {
 
 directive(function inputElementRadios() {
     return {
+        bindTo: 'data-model',
         expressions: $elem => {
             if (!$elem.tagName == 'input')
                 return;
@@ -56,7 +59,7 @@ directive(function inputElementRadios() {
 
 directive(function dataHtml() {
     return {
-        bindTo: '[data-html]',
+        bindTo: 'data-html',
         expressions: $elem => $elem.dataset.html,
         onChange($elem, result, state) {
             $elem.innerHTML = result;
@@ -66,7 +69,7 @@ directive(function dataHtml() {
 
 directive(function dataText() {
     return {
-        bindTo: '[data-text]',
+        bindTo: 'data-text',
         expressions: $elem => $elem.dataset.text,
         onChange($elem, result, state) {
             $elem.innerText = result;
@@ -76,6 +79,7 @@ directive(function dataText() {
 
 directive(function dataBind() {
     return {
+        bindTo: 'data-bind',
         expressions: $elem => {
             const expressions = Object.keys($elem.attributes).filter(i => $elem.attributes[i].name.startsWith('data-bind:') || $elem.attributes[i].name.startsWith(':')).map(i => {
                 const attributeName = $elem.attributes[i].name;
@@ -94,6 +98,7 @@ directive(function dataBind() {
 
 directive(function dataClass() {
     return {
+        bindTo: 'data-class',
         expressions: $elem => $elem.dataset.class,
         onChange($elem, result, state) {
             if (typeof result == 'object') {
@@ -113,6 +118,7 @@ directive(function dataClass() {
 
 directive(function dataStyle() {
     return {
+        bindTo: 'data-style',
         expressions: $elem => $elem.dataset.style,
         onChange($elem, result, state) {
             if (typeof result == 'object') {
@@ -128,6 +134,7 @@ directive(function dataStyle() {
 
 directive(function styleXyz() {
     return {
+        bindTo: 'data-style:',
         expressions: $elem => {
             const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).map(key => $elem.dataset[key]);
             return expressions;
@@ -140,6 +147,7 @@ directive(function styleXyz() {
 
 directive(function classXyz() {
     return {
+        bindTo: 'data-class:',
         expressions: $elem => {
             const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).map(key => {
                 return {
@@ -160,6 +168,7 @@ directive(function classXyz() {
 
 directive(function dataShow() {
     return {
+        bindTo: 'data-show',
         expressions: $elem => $elem.dataset.show,
         onChange($elem, result) {
             $elem.style.display = result ? 'block' : 'none';

@@ -1,5 +1,5 @@
 const { getDombeeCoreInstance } = require('./helpers/helpers');
-const { defaultConfig, onChange, expressions } = require('./helpers/defaults');
+const { defaultConfig, onChange, expressions, bindTo } = require('./helpers/defaults');
 let Dombee;
 
 describe("Dombee.directive", function() {
@@ -17,16 +17,16 @@ describe("Dombee.directive", function() {
         expect(() => Dombee(defaultConfig)).toThrow();
     });
     it("should accept objects as parameter", function() {
-        Dombee.directive({ onChange, expressions })
+        Dombee.directive({ onChange, expressions, bindTo })
         expect(() => Dombee(defaultConfig)).not.toThrow();
     });
     it("should accept functions as parameter", function() {
-        Dombee.directive(function() { return { onChange, expressions } });
+        Dombee.directive(function() { return { onChange, expressions, bindTo } });
         expect(() => Dombee(defaultConfig)).not.toThrow();
     });
 
     it("should not throw an error if Directive is not found in DOM", function() {
-        Dombee.directive(function() { return { onChange, expressions } });
+        Dombee.directive(function() { return { onChange, expressions, bindTo } });
         expect(() => Dombee({ bindTo: 'body', data: { name: 'test' } })).not.toThrow();
     });
 
@@ -38,7 +38,7 @@ describe("Dombee.directive", function() {
             Dombee.directive({ onChange });
         });
         it("should throw an error if property 'bindTo' is null", function() {
-            Dombee.directive({ onChange, expressions });
+            Dombee.directive({ onChange, expressions, bindTo });
         });
         afterEach(() => {
             expect(() => Dombee({}).toThrow());
@@ -55,22 +55,19 @@ describe("Dombee.directive", function() {
         });
     });
     describe('property "expressions"', function() {
-        it("should be valid if it is a function", function() {
-            Dombee.directive({ onChange, expressions: function() { return 'abc' } });
-            expect(() => Dombee(defaultConfig)).not.toThrow();
-        });
         it("should throw an error if it is an Array", function() {
-            Dombee.directive({ onChange, expressions: ['abc'] });
+            Dombee.directive({ onChange, expressions, bindTo: ['abc'] });
             expect(() => Dombee(defaultConfig)).toThrow();
         });
         it("should throw an error if it is a number", function() {
-            Dombee.directive({ onChange, expressions: 1 });
+            Dombee.directive({ onChange, expressions, bindTo: 1 });
 
             expect(() => Dombee(defaultConfig)).toThrow();
         });
 
         it("should be valid if it is a function returning an object having a key 'expression'", function() {
             Dombee.directive({
+                bindTo,
                 onChange,
                 expressions: () => {
                     return {

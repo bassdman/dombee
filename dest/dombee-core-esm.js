@@ -1838,8 +1838,39 @@ function stubFalse() {
 module.exports = cloneDeep;
 });
 
+var Cache_1 = function(_config = {}) {
+    let config = _config;
+
+    const cacheFn = function(key, value) {
+        if (value && !key)
+            throw new Error('Error in Cache: key is null but value is defined. cache(null,"value"). But it should be: cache(), cache(key),cache(key,value)');
+
+        if (key && config[key])
+            return config[key];
+
+        if (value) {
+            if (typeof value == 'function')
+                config[key] = value();
+            else
+                config[key] = value;
+        }
+
+        if (key)
+            return config[key];
+
+        return config;
+    };
+
+    cacheFn.reset = function() {
+        config = {};
+    };
+    return cacheFn;
+};
+
 const initialGlobalCache = {
     directives: [],
+    directivesObj: {},
+    noDirectives: {},
     events: {
         onload: []
     },
@@ -1852,6 +1883,8 @@ const initialGlobalCache = {
 };
 let globalCache = lodash_clonedeep(initialGlobalCache);
 
+const renderResultCache = new Cache_1();
+const directivesCache = new Cache_1();
 
 function initRoot(config) {
     const _document = Dombee.documentMock || document;
@@ -1886,6 +1919,7 @@ function Dombee(config) {
     const state = new Proxy(config.data, {
         set(target, property, value) {
             target[property] = value;
+            renderResultCache.reset();
             render(target, property, value);
 
             for (let dependency of cache.dependencies[property]) {
@@ -2011,44 +2045,73 @@ function Dombee(config) {
     function watch(key, fn) {
     }
 
-    console.log('start');
+    function getDirectivesFromCache(attr) {
+        const attrkey = attr.toLowerCase();
+        let value = globalCache.directivesObj[attrkey];
+
+        if (value)
+            return value;
+
+        if (globalCache.noDirectives[attrkey])
+            return [];
+
+        for (let key of Object.keys(globalCache.directivesObj)) {
+            if (attr.startsWith(key))
+                return globalCache.directivesObj[key];
+        }
+
+        globalCache.noDirectives[attrkey] = true;
+        return [];
+
+    }
+
+    for (let directiveConfig of globalCache.directives) {
+        const directive = createDirective(directiveConfig, { $root, state, values });
+        const key = directive.bindTo.toLowerCase();
+        delete directive.bindTo;
+
+
+        if (!globalCache.directivesObj[key])
+            globalCache.directivesObj[key] = [];
+
+        globalCache.directivesObj[key].push(directive);
+    }
     $root.querySelectorAll('*').forEach($elem => {
         if (!$elem.dataset)
             $elem.dataset = {};
 
         const elemId = $elem.dataset.id || randomId('id');
 
-        for (let directiveConfig of globalCache.directives) {
+        for (let attr of $elem.attributes) {
+            const directives = getDirectivesFromCache(attr.name);
 
-            const directive = createDirective(directiveConfig, { $root, state, values });
+            for (let directive of directives) {
+                let expressions = directive.expressions($elem);
 
-            let expressions = directive.expressions($elem);
+                if (expressions == null)
+                    continue;
 
-            if (expressions == null)
-                continue;
+                if (!Array.isArray(expressions))
+                    expressions = [expressions];
 
-            if (!Array.isArray(expressions))
-                expressions = [expressions];
+                for (let expression of expressions) {
+                    if (expression) {
+                        if ($elem.dataset.id == null)
+                            $elem.dataset.id = elemId;
 
-            for (let expression of expressions) {
-                if (expression) {
-                    if ($elem.dataset.id == null)
-                        $elem.dataset.id = elemId;
-
-                    addDependencies(expression, 0, elemId, directive);
+                        addDependencies(expression, 0, elemId, directive);
+                    }
                 }
             }
         }
     });
-
-    console.log('start2');
 
     const render = (state, prop, value) => {
         const toUpdate = cache.dependencies[prop] || [];
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const $elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
-            const result = compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes);
+            const result = renderResultCache(cacheUpdateEntry.expression, () => compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes));
 
             if (cacheUpdateEntry.onChange)
                 cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
@@ -2063,7 +2126,6 @@ function Dombee(config) {
         render(state, key, state[key]);
     });
 
-    console.log('finished');
     return {
         state,
         values: values(),
@@ -2102,6 +2164,7 @@ function onLoad(fn) {
 
 function reset() {
     globalCache = lodash_clonedeep(initialGlobalCache);
+    renderResultCache.reset();
 }
 
 function directive(config) {
