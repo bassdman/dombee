@@ -50,9 +50,43 @@ describe("Cache()", function() {
         expect(cache()).toEqual({ abc: 'def' });
     });
 
-    it("should throw an error for cache(null,'def')", function() {
+    it("should return 'def' for cache('abc',()=>'def') of Cache()", function() {
         const cache = new Cache({});
+        cache('abc', () => 'def');
+
+        expect(cache('abc')).toBe('def');
+        expect(cache()).toEqual({ abc: 'def' });
+    });
+
+    it("should throw an error for cache(null,'def')", function() {
+        const cache = new Cache();
 
         expect(() => cache(null, 'def')).toThrow();
+    });
+
+    it("should have a function called reset", function() {
+        const cache = new Cache();
+
+        expect(typeof cache.reset).toBe('function');
+    });
+
+    it("with cache.reset() should leave the internal cache empty", function() {
+        const cache = new Cache();
+
+        expect(typeof cache.reset).toBe('function');
+    });
+
+    it("with cache.reset() should leave the internal cache empty", function() {
+        const cache = new Cache({ abc: 'def' });
+        cache.reset();
+        expect(cache()).toEqual({});
+    });
+
+    it("should not call spyfunction if key exists in cache", function() {
+        const spyFunction = jasmine.createSpy('plugin')
+
+        const cache = new Cache({ abc: 'def' });
+        cache('abc', spyFunction);
+        expect(spyFunction).not.toHaveBeenCalled();
     });
 })
