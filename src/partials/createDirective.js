@@ -1,5 +1,3 @@
-import { isDomElement } from "../helpers/isDomElement";
-
 export function createDirective(config, { state, values }) {
     if (config == null)
         throw new Error('Dombee.directive(config) failed. The first parameter must be a config object or function, but is null.');

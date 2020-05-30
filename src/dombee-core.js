@@ -130,7 +130,7 @@ function Dombee(config) {
 
     }
 
-    function addDependencies(expressionResult = "", name, elemid, directive = {}, ) {
+    function addDependencies(expressionResult = "", name, elemid, directive = {}, $elem) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
         const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
@@ -146,8 +146,8 @@ function Dombee(config) {
                 const matchid = elemid ? elemid + '_' + randomId('') : name;
                 cache.dependencies[key].push(matchid);
                 cache.bindings[matchid] = {
-                    elemid,
                     name,
+                    $elem,
                     onChange: directive.onChange,
                     resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult, expressionTypes),
                     resultFnRaw: expressionResult.expression ? expressionResult.expression : expressionResult,
@@ -213,8 +213,6 @@ function Dombee(config) {
     for (let directiveConfig of globalCache.directives) {
         const directive = createDirective(directiveConfig, { $root, state, values });
         const key = directive.bindTo.toLowerCase();
-        delete directive.bindTo;
-
 
         if (!globalCache.directivesObj[key])
             globalCache.directivesObj[key] = [];
@@ -225,7 +223,7 @@ function Dombee(config) {
         if (!$elem.dataset)
             $elem.dataset = {};
 
-        const elemId = $elem.dataset.id || randomId('id');
+        const elemId = randomId('id');
 
         for (let attr of $elem.attributes) {
             const directives = getDirectivesFromCache(attr.name);
@@ -241,10 +239,8 @@ function Dombee(config) {
 
                 for (let expression of expressions) {
                     if (expression) {
-                        if ($elem.dataset.id == null)
-                            $elem.dataset.id = elemId;
 
-                        addDependencies(expression, 0, elemId, directive);
+                        addDependencies(expression, 0, elemId, directive, $elem);
                     }
                 }
             }
@@ -253,9 +249,10 @@ function Dombee(config) {
 
     const render = (state, prop, value) => {
         const toUpdate = cache.dependencies[prop] || [];
+
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
-            const $elem = $root.querySelector(`[data-id="${cacheUpdateEntry.elemid}"]`);
+            const $elem = cacheUpdateEntry.$elem;
             const result = renderResultCache(cacheUpdateEntry.expression, () => compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes));
 
             if (cacheUpdateEntry.onChange)
