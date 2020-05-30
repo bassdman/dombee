@@ -25,9 +25,7 @@
         "url": "https://github.com/bassdman/dombee/issues"
     },
     "homepage": "https://github.com/bassdman/dombee#readme",
-    "dependencies": {
-        "lodash.clonedeep": "^4.5.0"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@rollup/plugin-commonjs": "^12.0.0",
         "@rollup/plugin-node-resolve": "^8.0.0",

@@ -4,28 +4,29 @@ import { createDirective } from './partials/createDirective';
 import { randomId } from "./helpers/randomId.js";
 import { isDomElement } from "./helpers/isDomElement";
 
-import cloneDeep from 'lodash.clonedeep';
-
 import { Cache } from './helpers/Cache.js';
 
-const initialGlobalCache = {
-    directives: [],
-    directivesObj: {},
-    noDirectives: {},
-    events: {
-        onload: []
-    },
-    dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
-    expressionTypes: {
-        "js": expressionTypeJs,
-        "js-template-string": expressionTypeJsTemplateString
-    },
-    defaultExpressionTypes: ['js', 'js-template-string']
-};
-export let globalCache = cloneDeep(initialGlobalCache);
+export let globalCache;
 
 const renderResultCache = new Cache();
-const directivesCache = new Cache();
+
+function reset() {
+    globalCache = {
+        directives: [],
+        directivesObj: {},
+        noDirectives: {},
+        events: {
+            onload: []
+        },
+        dependencyEvaluationStrategy: dependencyEvaluationStrategyDefault,
+        expressionTypes: {
+            "js": expressionTypeJs,
+            "js-template-string": expressionTypeJsTemplateString
+        },
+        defaultExpressionTypes: ['js', 'js-template-string']
+    };
+    renderResultCache.reset();
+}
 
 function initRoot(config) {
     const _document = Dombee.documentMock || document;
@@ -43,7 +44,6 @@ function initRoot(config) {
 
     return $rootElement;
 }
-
 
 
 function Dombee(config) {
@@ -277,6 +277,7 @@ function Dombee(config) {
     }
 };
 
+
 function dependencyEvaluationStrategy(fn) {
     if (fn == null)
         throw new Error('fn is null but must be a function;')
@@ -305,14 +306,11 @@ function onLoad(fn) {
     globalCache.events.onload.push(fn);
 }
 
-function reset() {
-    globalCache = cloneDeep(initialGlobalCache);
-    renderResultCache.reset();
-}
-
 function directive(config) {
     globalCache.directives.push(config);
 }
+
+reset();
 
 Object.assign(Dombee, {
     directive,
