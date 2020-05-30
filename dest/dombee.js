@@ -148,7 +148,8 @@ var Dombee = (function () {
         const cache = {
             _localDumbeeCache: true,
             bindings: {},
-            dependencies: {}
+            dependencies: {},
+            stateDependencies: {}
         };
 
         config = initConfig(config);
@@ -160,7 +161,7 @@ var Dombee = (function () {
                 renderResultCache.reset();
                 render(target, property, value);
 
-                for (let dependency of cache.dependencies[property]) {
+                for (let dependency of cache.stateDependencies[property] || []) {
                     render(target, dependency, state[dependency]);
                 }
 
@@ -226,11 +227,12 @@ var Dombee = (function () {
 
         }
 
-        function addDependencies(expressionResult = "", name, elemid, directive = {}, $elem) {
+        function addDependencies(expressionResult = "", name, directive = {}, $elem) {
             const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
             const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
             const expressionTypes = getExpressionTypes(directive);
+            const matchid = randomId('id');
 
             for (let key of dependencies) {
 
@@ -239,14 +241,13 @@ var Dombee = (function () {
                 }
 
                 if (key !== name) {
-                    const matchid = elemid ? elemid + '_' + randomId('') : name;
                     cache.dependencies[key].push(matchid);
                     cache.bindings[matchid] = {
                         name,
                         $elem,
                         onChange: directive.onChange,
-                        resultFn: toFn(expressionResult.expression ? expressionResult.expression : expressionResult, expressionTypes),
-                        resultFnRaw: expressionResult.expression ? expressionResult.expression : expressionResult,
+                        resultFn: expressionResult.expression ? expressionResult.expression : expressionResult,
+                        expressionTypes,
                         expression: expressionResult,
                         expressionTypes
                     };
@@ -316,8 +317,6 @@ var Dombee = (function () {
             if (!$elem.dataset)
                 $elem.dataset = {};
 
-            const elemId = randomId('id');
-
             for (let attr of $elem.attributes) {
                 const directives = getDirectivesFromCache(attr.name);
 
@@ -333,7 +332,7 @@ var Dombee = (function () {
                     for (let expression of expressions) {
                         if (expression) {
 
-                            addDependencies(expression, 0, elemId, directive, $elem);
+                            addDependencies(expression, 0, directive, $elem);
                         }
                     }
                 }
@@ -354,8 +353,17 @@ var Dombee = (function () {
         };
 
         Object.keys(state).forEach(key => {
+
             if (typeof state[key] == 'function') {
-                addDependencies(state[key], key);
+                const fn = state[key];
+                const dependencies = globalCache.dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
+
+                for (let dependency of dependencies) {
+                    if (!cache.stateDependencies[dependency])
+                        cache.stateDependencies[dependency] = [];
+
+                    cache.stateDependencies[dependency].push(key);
+                }
             }
 
             render(state, key, state[key]);
