@@ -58,6 +58,34 @@ function createDirective(config, { state, values }) {
     return directive;
 }
 
+function compute(text = '', expressionTypes, values, valuesParsable) {
+    const paramValues = Object.values(values);
+
+    const fn = typeof text == 'string' ? toFn(text, expressionTypes, valuesParsable) : text;
+    const result = fn(...paramValues); //wirft einen Fehler, wenn invalide
+    return result;
+}
+
+function toFn(text, expressionTypes, values) {
+
+    for (let expressionType of expressionTypes) {
+        try {
+            if (expressionType.fn == null)
+                throw `Expressiontype "${expressionType.key}" does not exist. If the name is correct, please add it with "Dombee.addExpressionType('${expressionTypeKey}', function(text,values){/*your code here*/})"`;
+
+            return expressionType.fn(text, values);
+        } catch (e) {
+            if (typeof e == 'string')
+                throw new Error(e);
+            // This expressionType did not succeed. Maybe it is another one.
+            // Try next one
+        }
+    }
+
+    //no expressiontype succeeded, throw error;
+    throw new Error(`Expression ${text} can not be parsed.`);
+}
+
 function randomId(prefix = "") {
 
     return prefix + Math.random().toString(36).substring(2, 15);
@@ -181,37 +209,7 @@ function Dombee(config) {
         return config;
     }
 
-    function compute(text = '', expressionTypes) {
-        const _values = values();
-        const paramValues = Object.keys(_values).map(key => _values[key]);
 
-        const fn = typeof text == 'string' ? toFn(text, expressionTypes) : text;
-        const result = fn(...paramValues); //wirft einen Fehler, wenn invalide
-        return result;
-    }
-
-    function toFn(text, expressionTypes) {
-
-        const _values = values('parsable');
-
-        for (let expressionTypeKey of expressionTypes) {
-            try {
-                const expressionTypeFn = globalCache.expressionTypes[expressionTypeKey];
-                if (expressionTypeFn == null)
-                    throw `Expressiontype "${expressionTypeKey}" does not exist. If the name is correct, please add it with "Dombee.addExpressionType('${expressionTypeKey}', function(text,values){/*your code here*/})"`;
-
-                return expressionTypeFn(text, _values);
-            } catch (e) {
-                if (typeof e == 'string')
-                    throw new Error(e);
-                // This expressionType did not succeed. Maybe it is another one.
-                // Try next one
-            }
-        }
-
-        //no expressiontype succeeded, throw error;
-        throw new Error(`Expression ${text} can not be parsed.`);
-    }
 
     function getExpressionTypes(directive) {
         if (!directive || !directive.expressionTypes)
@@ -342,7 +340,8 @@ function Dombee(config) {
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const $elem = cacheUpdateEntry.$elem;
-            const result = renderResultCache(cacheUpdateEntry.expression, () => compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes));
+            const result = renderResultCache(cacheUpdateEntry.expression, () =>
+                compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
 
             if (cacheUpdateEntry.onChange)
                 cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
