@@ -32,7 +32,8 @@ export function createDirective(config, { state, values }) {
     /*
         Initialize the elements attribute
     */
-
+    if (directive.bindTo == null)
+        directive.bindTo = '*';
 
     return directive;
 }

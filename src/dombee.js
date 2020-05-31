@@ -1,5 +1,31 @@
 import { directive, Dombee, onLoad } from './dombee-core.js';
 
+onLoad(function replaceHandlebars({ $root }) {
+    $root.querySelectorAll('*').forEach($elem => {
+        const innerText = [].reduce.call($elem.childNodes, function(a, b) { return a + (b.nodeType === 3 ? b.textContent : ''); }, '').trim();
+
+        const found = [...innerText.matchAll(/{{.*?}}/g)];
+
+        if (!found.length)
+            return;
+
+        const foundEntries = found.map(entry => {
+            return {
+                expression: entry[0].replace('{{', '').replace('}}', ''),
+                raw: entry[0]
+            }
+        });
+
+        let modifiedHTML = $elem.innerHTML;
+        for (let foundEntry of foundEntries) {
+            modifiedHTML = modifiedHTML.replace(foundEntry.raw, `<span data-interpolation="${foundEntry.expression}"></span>`)
+        }
+
+        $elem.innerHTML = modifiedHTML;
+    });
+});
+
+
 directive({
     name: 'inputElementCheckboxes',
     bindTo: 'data-model',
@@ -53,6 +79,16 @@ directive(function inputElementRadios() {
         onChange($elem, result, { property, value }) {
             if ($elem.value == value)
                 $elem.setAttribute('checked', 'checked');
+        },
+    }
+});
+
+directive(function dataInterpolation() {
+    return {
+        bindTo: 'data-interpolation',
+        expressions: $elem => $elem.dataset.interpolation,
+        onChange($elem, result, state) {
+            $elem.innerText = result;
         },
     }
 });

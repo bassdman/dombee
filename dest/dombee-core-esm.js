@@ -53,7 +53,8 @@ function createDirective(config, { state, values }) {
     /*
         Initialize the elements attribute
     */
-
+    if (directive.bindTo == null)
+        directive.bindTo = '*';
 
     return directive;
 }
@@ -311,6 +312,24 @@ function Dombee(config) {
     $root.querySelectorAll('*').forEach($elem => {
         if (!$elem.dataset)
             $elem.dataset = {};
+
+        const elementDirectives = getDirectivesFromCache('*');
+        for (let directive of elementDirectives) {
+            let expressions = directive.expressions($elem);
+
+            if (expressions == null)
+                continue;
+
+            if (!Array.isArray(expressions))
+                expressions = [expressions];
+
+            for (let expression of expressions) {
+                if (expression) {
+
+                    addDependencies(expression, 0, directive, $elem);
+                }
+            }
+        }
 
         for (let attr of $elem.attributes) {
             const directives = getDirectivesFromCache(attr.name);

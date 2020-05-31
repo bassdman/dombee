@@ -56,7 +56,8 @@ var Dombee = (function (exports) {
         /*
             Initialize the elements attribute
         */
-
+        if (directive.bindTo == null)
+            directive.bindTo = '*';
 
         return directive;
     }
@@ -312,6 +313,24 @@ var Dombee = (function (exports) {
         $root.querySelectorAll('*').forEach($elem => {
             if (!$elem.dataset)
                 $elem.dataset = {};
+
+            const elementDirectives = getDirectivesFromCache('*');
+            for (let directive of elementDirectives) {
+                let expressions = directive.expressions($elem);
+
+                if (expressions == null)
+                    continue;
+
+                if (!Array.isArray(expressions))
+                    expressions = [expressions];
+
+                for (let expression of expressions) {
+                    if (expression) {
+
+                        addDependencies(expression, 0, directive, $elem);
+                    }
+                }
+            }
 
             for (let attr of $elem.attributes) {
                 const directives = getDirectivesFromCache(attr.name);

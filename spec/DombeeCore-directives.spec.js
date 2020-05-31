@@ -33,15 +33,15 @@ describe("Dombee.directive", function() {
     describe('with object as parameter', function() {
         it("should throw an error if property 'onChange' is null", function() {
             Dombee.directive({ expressions });
+            expect(() => Dombee({}).toThrow());
         });
         it("should throw an error if property 'expressions' is null", function() {
             Dombee.directive({ onChange });
-        });
-        it("should throw an error if property 'bindTo' is null", function() {
-            Dombee.directive({ onChange, expressions, bindTo });
-        });
-        afterEach(() => {
             expect(() => Dombee({}).toThrow());
+        });
+        it("should not throw an error if property 'bindTo' is null", function() {
+            Dombee.directive({ onChange, expressions, bindTo });
+            expect(() => Dombee({}).not.toThrow());
         });
     });
     describe('property "onChange"', function() {
