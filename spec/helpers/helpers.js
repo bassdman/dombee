@@ -13,6 +13,7 @@ function getDombeeInstance(html = defaultHTML) {
 function getDombeeCoreInstance(html = defaultHTML) {
     const dom = new JSDOM(html);
     DombeeCore.documentMock = dom.window.document;
+    DombeeCore.errorMode = 'development';
     return DombeeCore;
 }
 

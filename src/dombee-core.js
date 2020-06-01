@@ -1,6 +1,8 @@
 import { dependencyEvaluationStrategyDefault, expressionTypeJs, expressionTypeJsTemplateString } from "./defaults.js";
 import { createDirective } from './partials/createDirective';
 import { compute } from './partials/compute';
+import { throwErrorIf, errorMode } from './helpers/throwError';
+
 
 import { randomId } from "./helpers/randomId.js";
 import { isDomElement } from "./helpers/isDomElement";
@@ -48,6 +50,7 @@ function initRoot(config) {
 
 
 function Dombee(config) {
+
     const watched = {};
 
     const cache = {
@@ -58,6 +61,9 @@ function Dombee(config) {
     };
 
     config = initConfig(config);
+
+    errorMode(Dombee.errorMode || 'production');
+
     const $root = initRoot(config)
 
     const state = new Proxy(config.data, {
@@ -284,9 +290,7 @@ function dependencyEvaluationStrategy(fn) {
 }
 
 function addExpressionType(name, fn) {
-    if (name == null)
-        throw new Error('addExpressionType(name,fn) failed.  Name is undefined');
-
+    throwErrorIf(name == null, 'addExpressionType(name,fn) failed.  Name is undefined', 'addExpressionTypeNameUndefined');
     if (fn == null)
         throw new Error('addExpressionType(name,fn) failed. Function fn is undefined');
 

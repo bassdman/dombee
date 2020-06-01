@@ -2,7 +2,7 @@ let _errorMode = 'production';
 
 export function throwError(message, identifier) {
     if (_errorMode == 'development')
-        throw { id: identifier, message: message };
+        throw identifier;
 
     throw new Error(message);
 }

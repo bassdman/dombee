@@ -1,8 +1,12 @@
 const { throwError, throwErrorIf, errorMode } = require('./generated/throwError');
 
-fdescribe("throwError", function() {
+describe("throwError", function() {
     beforeEach(function() {
         errorMode('production');
+    });
+    afterEach(function() {
+        //sinnvoll, um keine anderen Tests zu beeinflussen, bei denen der Modus nur einmalig gesetzt wird
+        errorMode('development');
     });
 
     it("should exist as a function", function() {
@@ -24,13 +28,17 @@ fdescribe("throwError", function() {
 
     it("should throw 'cm' when having identifier 'cm' with errorMode='development'", function() {
         errorMode('development');
-        expect(() => throwError("custom message", "cm")).toThrow({ id: 'cm', message: 'custom message' });
+        expect(() => throwError("custom message", "cm")).toThrow('cm');
     });
 });
 
-fdescribe("throwErrorIf", function() {
+describe("throwErrorIf", function() {
     beforeEach(function() {
         errorMode('production');
+    });
+    afterEach(function() {
+        //sinnvoll, um keine anderen Tests zu beeinflussen, bei denen der Modus nur einmalig gesetzt wird
+        errorMode('development');
     });
 
     it("should exist as a function", function() {
@@ -60,11 +68,11 @@ fdescribe("throwErrorIf", function() {
 
     it("should throw 'cm' when having identifier 'cm' with errorMode='development'", function() {
         errorMode('development');
-        expect(() => throwErrorIf(true, "custom message", "cm")).toThrow({ id: 'cm', message: "custom message" });
+        expect(() => throwErrorIf(true, "custom message", "cm")).toThrow('cm');
     });
 });
 
-fdescribe("errorMode", function() {
+describe("errorMode", function() {
     it("should exist as a function", function() {
         expect(typeof errorMode).toEqual('function');
     });
