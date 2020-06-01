@@ -59,10 +59,10 @@ function createDirective(config, { state, values }) {
     */
     if (typeof config == 'function') {
         directive = config({ state, data: values });
-        if (directive == null)
-            throw new Error('Dombee.directive(config) failed. First parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?');
+        throwErrorIf(directive == null, 'Dombee.directive(config) failed. First parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?', 'directiveIsNull');
         directive.name = config.name;
     }
+
     throwErrorIf(directive.onChange == null, 'Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.', 'directive.onChangeIsNull');
 
     throwErrorIf(typeof directive.onChange !== 'function', 'Dombee.directive(config) failed. config.onChange must be a function.', 'directive.onChangeNoFunction');

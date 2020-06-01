@@ -48,6 +48,18 @@ describe("Dombee.directive", function() {
             expect(() => Dombee({}).not.toThrow());
         });
     });
+
+    describe('with function as parameter', function() {
+        it("should accept a function returning the configuration", function() {
+            Dombee.directive(() => { return { expressions, onChange } });
+            expect(() => Dombee({})).not.toThrow();
+        });
+        it("should throw an error if function returns null", function() {
+            Dombee.directive(() => {});
+            expect(() => Dombee({})).toThrow('directiveIsNull');
+        });
+    });
+
     describe('property "onChange"', function() {
         it("should be valid if it is a function", function() {
             Dombee.directive({ onChange: function() {}, expressions });

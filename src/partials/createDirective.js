@@ -20,17 +20,17 @@ export function createDirective(config, { state, values }) {
     */
     if (typeof config == 'function') {
         directive = config({ state, data: values });
-        if (directive == null)
-            throw new Error('Dombee.directive(config) failed. First parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?');
+        throwErrorIf(directive == null, `Dombee.directive(config) failed. First parameter is a function (${config}) but it returns null. Did you forget to return the configuration?`, 'directiveIsNull');
         directive.name = config.name;
     }
+
     throwErrorIf(directive.onChange == null, 'Dombee.directive(config) failed. Your directive config needs property "onChange" to be initialized successfully.', 'directive.onChangeIsNull');
 
     throwErrorIf(typeof directive.onChange !== 'function', 'Dombee.directive(config) failed. config.onChange must be a function.', 'directive.onChangeNoFunction');
 
     throwErrorIf(directive.expressions == null, 'Dombee.directive(config) failed. config.expressions must be a function. But it is null.', 'directive.expressionsIsNull')
 
-    throwErrorIf(typeof directive.expressions != 'function', 'Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions, 'directive.expressionsIsNotAFunction')
+    throwErrorIf(typeof directive.expressions != 'function', `Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ${typeof config.expressions}`, 'directive.expressionsIsNotAFunction')
 
     /*
         Initialize the elements attribute
@@ -38,7 +38,7 @@ export function createDirective(config, { state, values }) {
     if (directive.bindTo == null)
         directive.bindTo = '*';
 
-    throwErrorIf(typeof directive.bindTo != 'string', 'Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ' + typeof config.bindTo, 'directive.bindToNotString')
+    throwErrorIf(typeof directive.bindTo != 'string', `Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ${typeof config.bindTo}`, 'directive.bindToNotString')
 
 
     return directive;
