@@ -23,5 +23,5 @@ function toFn(text, expressionTypes, values) {
     }
 
     //no expressiontype succeeded, throw error;
-    throw new Error(`Expression ${text} can not be parsed.`);
+    throw new Error(`Expression "${text}" can not be parsed.`);
 }

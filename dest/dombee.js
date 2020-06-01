@@ -87,7 +87,7 @@ var Dombee = (function () {
         }
 
         //no expressiontype succeeded, throw error;
-        throw new Error(`Expression ${text} can not be parsed.`);
+        throw new Error(`Expression "${text}" can not be parsed.`);
     }
 
     function randomId(prefix = "") {
@@ -103,7 +103,7 @@ var Dombee = (function () {
         }
     }
 
-    var Cache_1 = function(_config = {}) {
+    function Cache(_config = {}) {
         let config = _config;
 
         const cacheFn = function(key, value) {
@@ -130,11 +130,11 @@ var Dombee = (function () {
             config = {};
         };
         return cacheFn;
-    };
+    }
 
     let globalCache;
 
-    const renderResultCache = new Cache_1();
+    const renderResultCache = new Cache();
 
     function reset() {
         globalCache = {
@@ -529,6 +529,7 @@ var Dombee = (function () {
 
     directive(function dataInterpolation() {
         return {
+            expressionTypes: 'js',
             bindTo: 'data-interpolation',
             expressions: $elem => $elem.dataset.interpolation,
             onChange($elem, result, state) {

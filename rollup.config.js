@@ -51,4 +51,10 @@ export default [{
       resolve(),
       babel({ babelHelpers: 'bundled' })
     ]*/
+}, {
+    input: ['src/helpers/Cache.js', 'src/helpers/throwError.js'],
+    output: [{
+        dir: 'spec/generated/',
+        format: 'cjs',
+    }],
 }];

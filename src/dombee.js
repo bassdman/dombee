@@ -85,6 +85,7 @@ directive(function inputElementRadios() {
 
 directive(function dataInterpolation() {
     return {
+        expressionTypes: 'js',
         bindTo: 'data-interpolation',
         expressions: $elem => $elem.dataset.interpolation,
         onChange($elem, result, state) {

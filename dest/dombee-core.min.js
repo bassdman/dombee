@@ -87,7 +87,7 @@ var Dombee = (function (exports) {
         }
 
         //no expressiontype succeeded, throw error;
-        throw new Error(`Expression ${text} can not be parsed.`);
+        throw new Error(`Expression "${text}" can not be parsed.`);
     }
 
     function randomId(prefix = "") {
@@ -103,7 +103,7 @@ var Dombee = (function (exports) {
         }
     }
 
-    var Cache_1 = function(_config = {}) {
+    function Cache(_config = {}) {
         let config = _config;
 
         const cacheFn = function(key, value) {
@@ -130,9 +130,9 @@ var Dombee = (function (exports) {
             config = {};
         };
         return cacheFn;
-    };
+    }
 
-    const renderResultCache = new Cache_1();
+    const renderResultCache = new Cache();
 
     function reset() {
         exports.globalCache = {

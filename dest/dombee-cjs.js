@@ -86,7 +86,7 @@ function toFn(text, expressionTypes, values) {
     }
 
     //no expressiontype succeeded, throw error;
-    throw new Error(`Expression ${text} can not be parsed.`);
+    throw new Error(`Expression "${text}" can not be parsed.`);
 }
 
 function randomId(prefix = "") {
@@ -102,7 +102,7 @@ function isDomElement(elemToProove) {
     }
 }
 
-var Cache_1 = function(_config = {}) {
+function Cache(_config = {}) {
     let config = _config;
 
     const cacheFn = function(key, value) {
@@ -129,11 +129,11 @@ var Cache_1 = function(_config = {}) {
         config = {};
     };
     return cacheFn;
-};
+}
 
 let globalCache;
 
-const renderResultCache = new Cache_1();
+const renderResultCache = new Cache();
 
 function reset() {
     globalCache = {
@@ -528,6 +528,7 @@ directive(function inputElementRadios() {
 
 directive(function dataInterpolation() {
     return {
+        expressionTypes: 'js',
         bindTo: 'data-interpolation',
         expressions: $elem => $elem.dataset.interpolation,
         onChange($elem, result, state) {
