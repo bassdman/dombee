@@ -1,4 +1,4 @@
-const { Cache } = require('../src/helpers/Cache');
+const { Cache } = require('./generated/Cache');
 
 describe("Cache()", function() {
     it("should be a function", function() {

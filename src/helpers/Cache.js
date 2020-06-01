@@ -1,4 +1,4 @@
-exports.Cache = function(_config = {}) {
+export function Cache(_config = {}) {
     let config = _config;
 
     const cacheFn = function(key, value) {
