@@ -344,7 +344,7 @@ var Dombee = (function () {
             const elementDirectives = getDirectivesFromCache('*');
             for (let directive of elementDirectives) {
                 if (directive.onElemLoad)
-                    directive.onElemLoad($elem, directive);
+                    directive.onElemLoad($elem, { directive, state, values: values() });
 
                 let expressions = directive.expressions($elem);
 
@@ -706,27 +706,36 @@ var Dombee = (function () {
         }
     });
 
-    onLoad(function addDataModelEvents({ state, $root }) {
-        const allInputsNoCheckbox = $root.querySelectorAll('[data-model]:not([type="checkbox"])');
-        const allCheckboxex = $root.querySelectorAll('input[data-model][type="checkbox"]');
+    directive(function addDataModelEvents() {
+        return {
+            bindTo: '*',
+            expressions: $elem => {},
+            onElemLoad($elem, { state }) {
+                if (!$elem.dataset.model)
+                    return;
 
-        for (let $elem of allInputsNoCheckbox) {
-            $elem.addEventListener('keyup', function() {
-                const name = $elem.dataset.model;
-                state[name] = $elem.value;
-            });
+                const isCheckbox = $elem.tagName == 'input' && $elem.getAttribute('type') == 'checkbox';
 
-            $elem.addEventListener('change', function() {
-                const name = $elem.dataset.model;
-                state[name] = $elem.value;
-            });
-        }
+                if (isCheckbox) {
+                    $elem.addEventListener('change', function() {
+                        const name = $elem.dataset.model;
+                        state[name] = $elem.checked;
+                    });
+                } else {
+                    $elem.addEventListener('keyup', function() {
+                        const name = $elem.dataset.model;
+                        state[name] = $elem.value;
+                    });
 
-        for (let $elem of allCheckboxex) {
-            $elem.addEventListener('change', function() {
-                const name = $elem.dataset.model;
-                state[name] = $elem.checked;
-            });
+                    $elem.addEventListener('change', function() {
+                        const name = $elem.dataset.model;
+                        state[name] = $elem.value;
+                    });
+                }
+            },
+            onChange($elem, result) {
+
+            },
         }
     });
 

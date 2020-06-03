@@ -341,7 +341,7 @@ function Dombee(config) {
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
             if (directive.onElemLoad)
-                directive.onElemLoad($elem, directive);
+                directive.onElemLoad($elem, { directive, state, values: values() });
 
             let expressions = directive.expressions($elem);
 
