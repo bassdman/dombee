@@ -57,7 +57,7 @@ function createDirective(config, { state, values }) {
     */
     if (typeof config == 'function') {
         directive = config({ state, data: values });
-        throwErrorIf(directive == null, 'Dombee.directive(config) failed. First parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?', 'directiveIsNull');
+        throwErrorIf(directive == null, `Dombee.directive(config) failed. First parameter is a function (${config}) but it returns null. Did you forget to return the configuration?`, 'directiveIsNull');
         directive.name = config.name;
     }
 
@@ -67,7 +67,7 @@ function createDirective(config, { state, values }) {
 
     throwErrorIf(directive.expressions == null, 'Dombee.directive(config) failed. config.expressions must be a function. But it is null.', 'directive.expressionsIsNull');
 
-    throwErrorIf(typeof directive.expressions != 'function', 'Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions, 'directive.expressionsIsNotAFunction');
+    throwErrorIf(typeof directive.expressions != 'function', `Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ${typeof config.expressions}`, 'directive.expressionsIsNotAFunction');
 
     /*
         Initialize the elements attribute
@@ -75,7 +75,7 @@ function createDirective(config, { state, values }) {
     if (directive.bindTo == null)
         directive.bindTo = '*';
 
-    throwErrorIf(typeof directive.bindTo != 'string', 'Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ' + typeof config.bindTo, 'directive.bindToNotString');
+    throwErrorIf(typeof directive.bindTo != 'string', `Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ${typeof config.bindTo}`, 'directive.bindToNotString');
 
 
     return directive;
@@ -340,6 +340,9 @@ function Dombee(config) {
 
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
+            if (directive.onElemLoad)
+                directive.onElemLoad($elem, directive);
+
             let expressions = directive.expressions($elem);
 
             if (expressions == null)
@@ -379,16 +382,19 @@ function Dombee(config) {
     });
 
     const render = (state, prop, value) => {
+        function compile(code = "", cacheKey, expressionTypes) {
+            const cacheId = cacheKey || code.toString();
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+        }
         const toUpdate = cache.dependencies[prop] || [];
 
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const $elem = cacheUpdateEntry.$elem;
-            const result = renderResultCache(cacheUpdateEntry.expression, () =>
-                compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
         }
     };
 
@@ -464,32 +470,6 @@ Object.assign(Dombee, {
     _id: randomId()
 });
 
-onLoad(function replaceHandlebars({ $root }) {
-    $root.querySelectorAll('*').forEach($elem => {
-        const innerText = [].reduce.call($elem.childNodes, function(a, b) { return a + (b.nodeType === 3 ? b.textContent : ''); }, '').trim();
-
-        const found = [...innerText.matchAll(/{{.*?}}/g)];
-
-        if (!found.length)
-            return;
-
-        const foundEntries = found.map(entry => {
-            return {
-                expression: entry[0].replace('{{', '').replace('}}', ''),
-                raw: entry[0]
-            }
-        });
-
-        let modifiedHTML = $elem.innerHTML;
-        for (let foundEntry of foundEntries) {
-            modifiedHTML = modifiedHTML.replace(foundEntry.raw, `<span data-interpolation="${foundEntry.expression}"></span>`);
-        }
-
-        $elem.innerHTML = modifiedHTML;
-    });
-});
-
-
 directive({
     name: 'inputElementCheckboxes',
     bindTo: 'data-model',
@@ -550,10 +530,56 @@ directive(function inputElementRadios() {
 directive(function dataInterpolation() {
     return {
         expressionTypes: 'js',
-        bindTo: 'data-interpolation',
-        expressions: $elem => $elem.dataset.interpolation,
-        onChange($elem, result, state) {
-            $elem.innerText = result;
+        bindTo: '*',
+        onElemLoad($elem) {
+            $elem.dombeeTemplates = Array.from($elem.childNodes).map($node => {
+                if ($node.nodeType == 3)
+                    return $node.nodeValue;
+                return null;
+            });
+        },
+        expressions: $elem => {
+            const interpolations = [];
+            for (let child of $elem.childNodes) {
+                if (child.nodeType != 3)
+                    continue;
+
+                if (!child.nodeValue.includes('{{'))
+                    continue;
+
+                const found = [...child.nodeValue.matchAll(/{{.*?}}/g)];
+                const foundEntries = found.map(entry => {
+                    return {
+                        expression: entry[0].replace('{{', '').replace('}}', ''),
+                        raw: entry[0]
+                    }
+                });
+                interpolations.push(...foundEntries);
+            }
+            $elem.dombeeInterpolations = interpolations;
+            return interpolations;
+        },
+        onChange($elem, result, { compile }) {
+            for (let i in $elem.childNodes) {
+                const child = $elem.childNodes[i];
+
+                if (child.nodeType != 3)
+                    continue;
+
+                let template = $elem.dombeeTemplates[i];
+
+                if (!template.includes('{{'))
+                    continue;
+
+                const found = [...template.matchAll(/{{(.*?)}}/g)];
+                for (let foundEntry of found) {
+                    const code = foundEntry[1];
+                    const compiled = compile(code, code, ['js']);
+                    template = template.replace(foundEntry[0], compiled);
+                }
+
+                child.nodeValue = template;
+            }
         },
     }
 });
@@ -573,7 +599,7 @@ directive(function dataText() {
         bindTo: 'data-text',
         expressions: $elem => $elem.dataset.text,
         onChange($elem, result, state) {
-            $elem.innerText = result;
+            $elem.textContent = result;
         },
     }
 });

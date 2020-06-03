@@ -1,31 +1,5 @@
 import { directive, Dombee, onLoad } from './dombee-core.js';
 
-onLoad(function replaceHandlebars({ $root }) {
-    $root.querySelectorAll('*').forEach($elem => {
-        const innerText = [].reduce.call($elem.childNodes, function(a, b) { return a + (b.nodeType === 3 ? b.textContent : ''); }, '').trim();
-
-        const found = [...innerText.matchAll(/{{.*?}}/g)];
-
-        if (!found.length)
-            return;
-
-        const foundEntries = found.map(entry => {
-            return {
-                expression: entry[0].replace('{{', '').replace('}}', ''),
-                raw: entry[0]
-            }
-        });
-
-        let modifiedHTML = $elem.innerHTML;
-        for (let foundEntry of foundEntries) {
-            modifiedHTML = modifiedHTML.replace(foundEntry.raw, `<span data-interpolation="${foundEntry.expression}"></span>`)
-        }
-
-        $elem.innerHTML = modifiedHTML;
-    });
-});
-
-
 directive({
     name: 'inputElementCheckboxes',
     bindTo: 'data-model',
@@ -86,10 +60,56 @@ directive(function inputElementRadios() {
 directive(function dataInterpolation() {
     return {
         expressionTypes: 'js',
-        bindTo: 'data-interpolation',
-        expressions: $elem => $elem.dataset.interpolation,
-        onChange($elem, result, state) {
-            $elem.innerText = result;
+        bindTo: '*',
+        onElemLoad($elem) {
+            $elem.dombeeTemplates = Array.from($elem.childNodes).map($node => {
+                if ($node.nodeType == 3)
+                    return $node.nodeValue;
+                return null;
+            });
+        },
+        expressions: $elem => {
+            const interpolations = [];
+            for (let child of $elem.childNodes) {
+                if (child.nodeType != 3)
+                    continue;
+
+                if (!child.nodeValue.includes('{{'))
+                    continue;
+
+                const found = [...child.nodeValue.matchAll(/{{.*?}}/g)];
+                const foundEntries = found.map(entry => {
+                    return {
+                        expression: entry[0].replace('{{', '').replace('}}', ''),
+                        raw: entry[0]
+                    }
+                });
+                interpolations.push(...foundEntries);
+            }
+            $elem.dombeeInterpolations = interpolations;
+            return interpolations;
+        },
+        onChange($elem, result, { compile }) {
+            for (let i in $elem.childNodes) {
+                const child = $elem.childNodes[i];
+
+                if (child.nodeType != 3)
+                    continue;
+
+                let template = $elem.dombeeTemplates[i];
+
+                if (!template.includes('{{'))
+                    continue;
+
+                const found = [...template.matchAll(/{{(.*?)}}/g)];
+                for (let foundEntry of found) {
+                    const code = foundEntry[1];
+                    const compiled = compile(code, code, ['js']);
+                    template = template.replace(foundEntry[0], compiled);
+                }
+
+                child.nodeValue = template
+            }
         },
     }
 });
@@ -109,7 +129,7 @@ directive(function dataText() {
         bindTo: 'data-text',
         expressions: $elem => $elem.dataset.text,
         onChange($elem, result, state) {
-            $elem.innerText = result;
+            $elem.textContent = result;
         },
     }
 });

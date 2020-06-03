@@ -61,7 +61,7 @@ function createDirective(config, { state, values }) {
     */
     if (typeof config == 'function') {
         directive = config({ state, data: values });
-        throwErrorIf(directive == null, 'Dombee.directive(config) failed. First parameter is a function (' + config + ') but it returns null. Did you forget to return the configuration?', 'directiveIsNull');
+        throwErrorIf(directive == null, `Dombee.directive(config) failed. First parameter is a function (${config}) but it returns null. Did you forget to return the configuration?`, 'directiveIsNull');
         directive.name = config.name;
     }
 
@@ -71,7 +71,7 @@ function createDirective(config, { state, values }) {
 
     throwErrorIf(directive.expressions == null, 'Dombee.directive(config) failed. config.expressions must be a function. But it is null.', 'directive.expressionsIsNull');
 
-    throwErrorIf(typeof directive.expressions != 'function', 'Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ' + typeof config.expressions, 'directive.expressionsIsNotAFunction');
+    throwErrorIf(typeof directive.expressions != 'function', `Dombee.directive(config) failed. config.expressions must be a function. But it is typeof ${typeof config.expressions}`, 'directive.expressionsIsNotAFunction');
 
     /*
         Initialize the elements attribute
@@ -79,7 +79,7 @@ function createDirective(config, { state, values }) {
     if (directive.bindTo == null)
         directive.bindTo = '*';
 
-    throwErrorIf(typeof directive.bindTo != 'string', 'Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ' + typeof config.bindTo, 'directive.bindToNotString');
+    throwErrorIf(typeof directive.bindTo != 'string', `Dombee.directive(config) failed. config.bindTo must be a string. But it is typeof ${typeof config.bindTo}`, 'directive.bindToNotString');
 
 
     return directive;
@@ -342,6 +342,9 @@ function Dombee(config) {
 
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
+            if (directive.onElemLoad)
+                directive.onElemLoad($elem, directive);
+
             let expressions = directive.expressions($elem);
 
             if (expressions == null)
@@ -381,16 +384,19 @@ function Dombee(config) {
     });
 
     const render = (state, prop, value) => {
+        function compile(code = "", cacheKey, expressionTypes) {
+            const cacheId = cacheKey || code.toString();
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: exports.globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+        }
         const toUpdate = cache.dependencies[prop] || [];
 
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const $elem = cacheUpdateEntry.$elem;
-            const result = renderResultCache(cacheUpdateEntry.expression, () =>
-                compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes.map(exType => { return { key: exType, fn: exports.globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
         }
     };
 

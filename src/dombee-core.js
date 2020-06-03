@@ -203,6 +203,9 @@ function Dombee(config) {
 
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
+            if (directive.onElemLoad)
+                directive.onElemLoad($elem, directive);
+
             let expressions = directive.expressions($elem);
 
             if (expressions == null)
@@ -242,16 +245,19 @@ function Dombee(config) {
     })
 
     const render = (state, prop, value) => {
+        function compile(code = "", cacheKey, expressionTypes) {
+            const cacheId = cacheKey || code.toString();
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+        }
         const toUpdate = cache.dependencies[prop] || [];
 
         for (let updateEntry of toUpdate) {
             const cacheUpdateEntry = cache.bindings[updateEntry];
             const $elem = cacheUpdateEntry.$elem;
-            const result = renderResultCache(cacheUpdateEntry.expression, () =>
-                compute(cacheUpdateEntry.resultFn, cacheUpdateEntry.expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root });
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
         }
     };
 
