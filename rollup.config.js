@@ -52,7 +52,7 @@ export default [{
       babel({ babelHelpers: 'bundled' })
     ]*/
 }, {
-    input: ['src/helpers/Cache.js', 'src/helpers/throwError.js'],
+    input: ['src/helpers/Cache.js', 'src/helpers/throwError.js', 'src/partials/DombeeModel.js'],
     output: [{
         dir: 'spec/generated/',
         format: 'cjs',

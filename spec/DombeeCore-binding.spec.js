@@ -85,6 +85,37 @@ describe("Dombee-binding", function() {
             expect(onChangeA).toHaveBeenCalledTimes(1);
             expect(onChangeB).toHaveBeenCalledTimes(1);
         });
+
+        it("should call onChangeNested 1x if data={level1:{level2:true}}", function() {
+            const Dombee = getDombeeCoreInstance('<div id="renderTo"><p data-test="level1.level2">name</p></div>');
+            const onChangeNested = jasmine.createSpy('onChangeA');
+
+            Dombee.directive({ bindTo: 'data-test', onChange: onChangeNested, expressions: $elem => $elem.dataset.test });
+            const dm = Dombee({ bindTo: '#renderTo', data: { level1: { level2: true } } });
+
+            expect(onChangeNested).toHaveBeenCalledTimes(1);
+        });
+
+        xit("should call onChangeNested 2x if data={level1:{level2:true}} and level1.level2 changed after init", function() {
+            const Dombee = getDombeeCoreInstance('<div id="renderTo"><p data-test="level1.level2">name</p></div>');
+            const onChangeNested = jasmine.createSpy('onChangeA');
+
+            Dombee.directive({ bindTo: 'data-test', onChange: onChangeNested, expressions: $elem => $elem.dataset.test });
+            const dm = Dombee({ bindTo: '#renderTo', data: { level1: { level2: true } } });
+            dm.state.level1.level2 = false;
+
+            expect(onChangeNested).toHaveBeenCalledTimes(2);
+        });
+
+        it("should not call onChangeNested if data={level1:{level2WrongKey:true}}", function() {
+            const Dombee = getDombeeCoreInstance('<div id="renderTo"><p data-test="level1.level2">name</p></div>');
+            const onChangeNested = jasmine.createSpy('onChangeA');
+
+            Dombee.directive({ bindTo: 'data-test', onChange: onChangeNested, expressions: $elem => $elem.dataset.test });
+            Dombee({ bindTo: '#renderTo', data: { level1: { level2WrongKey: true } } });
+
+            expect(onChangeNested).toHaveBeenCalledTimes(1);
+        });
     });
     describe("after data change", function() {
         it("should call onChange 2x if data={name:'xyz'}", function() {

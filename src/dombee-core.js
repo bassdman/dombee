@@ -2,6 +2,7 @@ import { dependencyEvaluationStrategyDefault, expressionTypeJs, expressionTypeJs
 import { createDirective } from './partials/createDirective';
 import { compute } from './partials/compute';
 import { throwErrorIf, errorMode } from './helpers/throwError';
+import { DombeeModel } from './partials/DombeeModel';
 
 
 import { randomId } from "./helpers/randomId.js";
@@ -66,22 +67,26 @@ function Dombee(config) {
 
     const $root = initRoot(config)
 
-    const state = new Proxy(config.data, {
-        set(target, property, value) {
-            target[property] = value;
-            renderResultCache.reset();
-            render(target, property, value);
-
-            for (let dependency of cache.stateDependencies[property] || []) {
-                render(target, dependency, state[dependency]);
-            }
-
-            return true;
-        },
-        get(obj, prop) {
-            const value = obj[prop];
-            return value;
+    const render = (state, prop, value) => {
+        function compile(code = "", cacheKey, expressionTypes) {
+            const cacheId = cacheKey || code.toString();
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
         }
+        const toUpdate = cache.dependencies[prop] || [];
+
+        for (let updateEntry of toUpdate) {
+            const cacheUpdateEntry = cache.bindings[updateEntry];
+            const $elem = cacheUpdateEntry.$elem;
+            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
+
+            if (cacheUpdateEntry.onChange)
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
+        }
+    };
+
+    const state = DombeeModel(config.data, {
+        beforeChange() { renderResultCache.reset(); },
+        onChange: render,
     });
 
     for (let onload of globalCache.events.onload) {
@@ -244,36 +249,10 @@ function Dombee(config) {
         }
     })
 
-    const render = (state, prop, value) => {
-        function compile(code = "", cacheKey, expressionTypes) {
-            const cacheId = cacheKey || code.toString();
-            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
-        }
-        const toUpdate = cache.dependencies[prop] || [];
 
-        for (let updateEntry of toUpdate) {
-            const cacheUpdateEntry = cache.bindings[updateEntry];
-            const $elem = cacheUpdateEntry.$elem;
-            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
-
-            if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
-        }
-    };
 
     Object.keys(state).forEach(key => {
 
-        if (typeof state[key] == 'function') {
-            const fn = state[key];
-            const dependencies = globalCache.dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
-
-            for (let dependency of dependencies) {
-                if (!cache.stateDependencies[dependency])
-                    cache.stateDependencies[dependency] = [];
-
-                cache.stateDependencies[dependency].push(key);
-            }
-        }
 
         render(state, key, state[key])
     });

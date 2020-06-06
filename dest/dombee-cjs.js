@@ -111,6 +111,62 @@ function toFn(text, expressionTypes, values) {
     throw new Error(`Expression "${text}" can not be parsed.`);
 }
 
+function DombeeModel(data, config = {}) {
+
+    const dependencyEvaluationStrategy = config.dependencyEvaluationStrategy || dependencyEvaluationStrategyDefault;
+    const dependencies = {};
+    const proxyConfig = {
+        set(target, property, value) {
+            const proxiedValue = typeof value == 'object' ? new Proxy(value, proxyConfig) : value;
+
+            target[property] = proxiedValue;
+
+            if (config.beforeChange)
+                config.beforeChange(property, value);
+
+            if (!config.onChange)
+                return true;
+
+            config.onChange(target, property, proxiedValue);
+
+            for (let dependency of dependencies[property] || []) {
+                config.onChange(target, dependency, state[dependency]);
+            }
+
+            return true;
+        },
+        get(target, key) {
+            /*      if (key == 'isProxy')
+                      return true;
+                  const prop = target[key];
+                  if (typeof prop == 'undefined')
+                      return;
+                  if (!prop.isProxy && typeof prop === 'object')
+                      target[key] = new Proxy(prop, proxyConfig);*/
+            return target[key];
+        }
+    };
+
+    const state = new Proxy(data, proxyConfig);
+
+    Object.keys(state).forEach(key => {
+
+        if (typeof state[key] == 'function') {
+            const fn = state[key];
+            const foundDependencies = dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
+
+            for (let dependency of foundDependencies) {
+                if (!dependencies[dependency])
+                    dependencies[dependency] = [];
+
+                dependencies[dependency].push(key);
+            }
+        }
+    });
+
+    return state;
+}
+
 function randomId(prefix = "") {
 
     return prefix + Math.random().toString(36).substring(2, 15);
@@ -208,22 +264,26 @@ function Dombee(config) {
 
     const $root = initRoot(config);
 
-    const state = new Proxy(config.data, {
-        set(target, property, value) {
-            target[property] = value;
-            renderResultCache.reset();
-            render(target, property, value);
-
-            for (let dependency of cache.stateDependencies[property] || []) {
-                render(target, dependency, state[dependency]);
-            }
-
-            return true;
-        },
-        get(obj, prop) {
-            const value = obj[prop];
-            return value;
+    const render = (state, prop, value) => {
+        function compile(code = "", cacheKey, expressionTypes) {
+            const cacheId = cacheKey || code.toString();
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
         }
+        const toUpdate = cache.dependencies[prop] || [];
+
+        for (let updateEntry of toUpdate) {
+            const cacheUpdateEntry = cache.bindings[updateEntry];
+            const $elem = cacheUpdateEntry.$elem;
+            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
+
+            if (cacheUpdateEntry.onChange)
+                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
+        }
+    };
+
+    const state = DombeeModel(config.data, {
+        beforeChange() { renderResultCache.reset(); },
+        onChange: render,
     });
 
     for (let onload of globalCache.events.onload) {
@@ -383,36 +443,10 @@ function Dombee(config) {
         }
     });
 
-    const render = (state, prop, value) => {
-        function compile(code = "", cacheKey, expressionTypes) {
-            const cacheId = cacheKey || code.toString();
-            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
-        }
-        const toUpdate = cache.dependencies[prop] || [];
 
-        for (let updateEntry of toUpdate) {
-            const cacheUpdateEntry = cache.bindings[updateEntry];
-            const $elem = cacheUpdateEntry.$elem;
-            const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
-
-            if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
-        }
-    };
 
     Object.keys(state).forEach(key => {
 
-        if (typeof state[key] == 'function') {
-            const fn = state[key];
-            const dependencies = globalCache.dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
-
-            for (let dependency of dependencies) {
-                if (!cache.stateDependencies[dependency])
-                    cache.stateDependencies[dependency] = [];
-
-                cache.stateDependencies[dependency].push(key);
-            }
-        }
 
         render(state, key, state[key]);
     });
