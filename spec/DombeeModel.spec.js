@@ -77,12 +77,19 @@ describe("DombeeModel", function() {
         });
 
         xit("should call onChange 1x if dm.nested.nested_l2.nested_l3_2 changed", function() {
+            /*
+                in future the dependency tracking must be improved. 
+                the current dependencymatching added with "state.key1.key2" finding syntax would 
+                ignore other writings from users like state['key1']['key2']" or even more complicated.
+                as soon as a more complex algorithm is added, we can reduce the number of calls
+            */
+
             dm.state.nested.nested_l2.nested_l3_2 = 23;
 
             expect(onChange).toHaveBeenCalledTimes(1);
         });
 
-        xit("should call onChange 2x if dm.nested.nested_l2.nested_l3 changed  due to dependency of computedWithNested fn", function() {
+        it("should call onChange 2x if dm.nested.nested_l2.nested_l3 changed  due to dependency of computedWithNested fn", function() {
             dm.state.nested.nested_l2.nested_l3 = 23;
 
             expect(onChange).toHaveBeenCalledTimes(2);

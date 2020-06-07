@@ -1,5 +1,6 @@
 import { dependencyEvaluationStrategyDefault } from "../defaults.js";
 import { throwErrorIf } from '../helpers/throwError';
+import { iterateRecursive } from '../helpers/iterateRecursive';
 
 export class DombeeModel {
     constructor(data, config) {
@@ -22,7 +23,7 @@ function init(data = {}, config = {}) {
     const dependencies = {};
     const proxyConfig = {
         set(target, property, value) {
-            const proxiedValue = typeof value == 'object' ? new Proxy(value, proxyConfig) : value;
+            const proxiedValue = value;
 
             target[property] = proxiedValue;
 
@@ -34,29 +35,30 @@ function init(data = {}, config = {}) {
 
             config.onChange(target, property, proxiedValue);
 
-            for (let dependency of dependencies[property] || []) {
+            const rootKey = getRootKey(target.__rootKey, property).split('.')[0];
+            for (let dependency of dependencies[rootKey] || []) {
                 config.onChange(target, dependency, state[dependency]);
             }
 
             return true;
         },
         get(target, key) {
-            if (key == 'isProxy')
-                return true;
-            const prop = target[key];
-            if (typeof prop == 'undefined')
-                return;
-            if (!prop.isProxy && typeof prop === 'object')
-                target[key] = new Proxy(prop, proxyConfig);
-            return target[key];
+            let value = target[key]
+            if (value) {
+                if (typeof value === 'object') {
+                    value.__rootKey = getRootKey(target.__rootKey, key);
+                    return new Proxy(value, proxyConfig)
+                }
+                return value
+            }
+            return new Proxy({}, proxyConfig)
         }
     };
 
     const state = new Proxy(data, proxyConfig);
 
-    Object.keys(state).forEach(key => {
-
-        if (typeof state[key] == 'function') {
+    iterateRecursive(state, (state, key, value, rootKey) => {
+        if (typeof value == 'function') {
             const fn = state[key];
             const foundDependencies = dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
 
@@ -97,4 +99,11 @@ function values(state, stringified) {
     });
 
     return retObj;
+}
+
+function getRootKey(target, current) {
+    if (target)
+        return target + '.' + current;
+    else
+        return current;
 }

@@ -113,6 +113,22 @@ function toFn(text, expressionTypes, values) {
     throw new Error(`Expression "${text}" can not be parsed.`);
 }
 
+function iterateRecursive(obj, handler, onlyLeafes = true) {
+    iterateInternal(obj, handler, onlyLeafes);
+}
+
+function iterateInternal(obj, handler, onlyLeafes = true, rootKey = []) {
+    Object.keys(obj).forEach(key => {
+
+        if (typeof obj[key] !== 'object' && onlyLeafes)
+            handler(obj, key, obj[key], rootKey.join('.'));
+
+        if (typeof obj[key] === 'object') {
+            iterateInternal(obj[key], handler, onlyLeafes, [...rootKey, key]);
+        }
+    });
+}
+
 class DombeeModel {
     constructor(data, config) {
         this.state = init(data, config);
@@ -134,7 +150,7 @@ function init(data = {}, config = {}) {
     const dependencies = {};
     const proxyConfig = {
         set(target, property, value) {
-            const proxiedValue = typeof value == 'object' ? new Proxy(value, proxyConfig) : value;
+            const proxiedValue = value;
 
             target[property] = proxiedValue;
 
@@ -146,29 +162,30 @@ function init(data = {}, config = {}) {
 
             config.onChange(target, property, proxiedValue);
 
-            for (let dependency of dependencies[property] || []) {
+            const rootKey = getRootKey(target.__rootKey, property).split('.')[0];
+            for (let dependency of dependencies[rootKey] || []) {
                 config.onChange(target, dependency, state[dependency]);
             }
 
             return true;
         },
         get(target, key) {
-            if (key == 'isProxy')
-                return true;
-            const prop = target[key];
-            if (typeof prop == 'undefined')
-                return;
-            if (!prop.isProxy && typeof prop === 'object')
-                target[key] = new Proxy(prop, proxyConfig);
-            return target[key];
+            let value = target[key];
+            if (value) {
+                if (typeof value === 'object') {
+                    value.__rootKey = getRootKey(target.__rootKey, key);
+                    return new Proxy(value, proxyConfig)
+                }
+                return value
+            }
+            return new Proxy({}, proxyConfig)
         }
     };
 
     const state = new Proxy(data, proxyConfig);
 
-    Object.keys(state).forEach(key => {
-
-        if (typeof state[key] == 'function') {
+    iterateRecursive(state, (state, key, value, rootKey) => {
+        if (typeof value == 'function') {
             const fn = state[key];
             const foundDependencies = dependencyEvaluationStrategy(fn, state).filter(dependency => dependency != key);
 
@@ -209,6 +226,13 @@ function values(state, stringified) {
     });
 
     return retObj;
+}
+
+function getRootKey(target, current) {
+    if (target)
+        return target + '.' + current;
+    else
+        return current;
 }
 
 function randomId(prefix = "") {
@@ -297,7 +321,6 @@ function Dombee(config) {
         _localDumbeeCache: true,
         bindings: {},
         dependencies: {},
-        stateDependencies: {}
     };
 
     config = initConfig(config);

@@ -58,7 +58,6 @@ function Dombee(config) {
         _localDumbeeCache: true,
         bindings: {},
         dependencies: {},
-        stateDependencies: {}
     };
 
     config = initConfig(config);

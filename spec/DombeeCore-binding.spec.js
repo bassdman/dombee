@@ -96,12 +96,12 @@ describe("Dombee-binding", function() {
             expect(onChangeNested).toHaveBeenCalledTimes(1);
         });
 
-        xit("should call onChangeNested 2x if data={level1:{level2:true}} and level1.level2 changed after init", function() {
+        it("should call onChangeNested 2x if data={level1:{level2:true}} and level1.level2 changed after init", function() {
             const Dombee = getDombeeCoreInstance('<div id="renderTo"><p data-test="level1.level2">name</p></div>');
             const onChangeNested = jasmine.createSpy('onChangeA');
 
             Dombee.directive({ bindTo: 'data-test', onChange: onChangeNested, expressions: $elem => $elem.dataset.test });
-            const dm = Dombee({ bindTo: '#renderTo', data: { level1: { level2: true } } });
+            const dm = Dombee({ bindTo: '#renderTo', data: { level1: { level2: true }, computed: (state) => state.level1.level2 } });
             dm.state.level1.level2 = false;
 
             expect(onChangeNested).toHaveBeenCalledTimes(2);
