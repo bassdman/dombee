@@ -1,6 +1,6 @@
 const { DombeeModel } = require('./generated/DombeeModel')
 
-fdescribe("DombeeModel", function() {
+describe("DombeeModel", function() {
 
     beforeEach(function() {
         //  Dombee.reset();
@@ -30,26 +30,38 @@ fdescribe("DombeeModel", function() {
         expect(() => DombeeModel([])).toThrow('datainvalid:noobject');
     });
 
-    it("should not call onChange if onchange is passed by config", function() {
-        const onChange = jasmine.createSpy('onChange');
-        DombeeModel({}, { onChange });
-        expect(onChange).not.toHaveBeenCalled();
-    });
 
-    describe('with data.name changed and config.onChange defined', () => {
+
+    describe('with config.onChange defined', () => {
+        const data = { name: 'abc', age: 23, computed(state) { return state.age + state.age } };
+
         let onChange;
+        let dm;
         beforeEach(() => {
             onChange = jasmine.createSpy('onChange');
-            const dm = DombeeModel({ name: 'abc' }, { onChange });
-            dm.name = 'def';
+            dm = DombeeModel(data, { onChange });
         });
 
-        it("should call onChange 1x", function() {
+        it("should not call onChange if no property is changed", function() {
+            expect(onChange).not.toHaveBeenCalled();
+        });
+
+        it("should call onChange 1x if dm.name changed", function() {
+            dm.name = 'def';
+
             expect(onChange).toHaveBeenCalledTimes(1);
         });
 
         it("should call onChange with params {name:'def'},'name','def'", function() {
-            expect(onChange).toHaveBeenCalledWith({ name: 'def' }, 'name', 'def');
+            dm.name = 'def';
+
+            expect(onChange).toHaveBeenCalledWith(data, 'name', 'def');
+        });
+
+        it("should call onChange 1x if dm.age changed due to dependency of computed fn", function() {
+            dm.age = 25;
+
+            expect(onChange).toHaveBeenCalledTimes(2);
         });
     })
 
