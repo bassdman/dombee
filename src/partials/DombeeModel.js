@@ -1,6 +1,9 @@
 import { dependencyEvaluationStrategyDefault } from "../defaults.js";
+import { throwErrorIf } from '../helpers/throwError';
 
-export function DombeeModel(data, config = {}) {
+export function DombeeModel(data = {}, config = {}) {
+
+    throwErrorIf(typeof data != 'object' || Array.isArray(data), `Error in DombeeModel(data,config): data is typeof${typeof data} but must be an object`, 'datainvalid:noobject')
 
     const dependencyEvaluationStrategy = config.dependencyEvaluationStrategy || dependencyEvaluationStrategyDefault;
     const dependencies = {};

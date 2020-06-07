@@ -112,7 +112,9 @@ var Dombee = (function (exports) {
         throw new Error(`Expression "${text}" can not be parsed.`);
     }
 
-    function DombeeModel(data, config = {}) {
+    function DombeeModel(data = {}, config = {}) {
+
+        throwErrorIf(typeof data != 'object' || Array.isArray(data), `Error in DombeeModel(data,config): data is typeof${typeof data} but must be an object`, 'datainvalid:noobject');
 
         const dependencyEvaluationStrategy = config.dependencyEvaluationStrategy || dependencyEvaluationStrategyDefault;
         const dependencies = {};
@@ -442,13 +444,15 @@ var Dombee = (function (exports) {
             }
         });
 
+        function renderRecursive(obj) {
+            Object.keys(obj).forEach(key => {
+                render(state, key, obj[key]);
+            });
+        }
+
+        renderRecursive(state);
 
 
-        Object.keys(state).forEach(key => {
-
-
-            render(state, key, state[key]);
-        });
 
         return {
             state,

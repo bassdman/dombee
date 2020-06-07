@@ -249,13 +249,19 @@ function Dombee(config) {
         }
     })
 
+    function getAttr(state, key) {
+
+    }
+
+    function renderRecursive(obj) {
+        Object.keys(obj).forEach(key => {
+            render(state, key, obj[key])
+        });
+    }
+
+    renderRecursive(state)
 
 
-    Object.keys(state).forEach(key => {
-
-
-        render(state, key, state[key])
-    });
 
     return {
         state,
