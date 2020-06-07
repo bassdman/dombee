@@ -153,6 +153,42 @@ directive(function dataBind() {
     }
 });
 
+
+
+directive(function styleXyz() {
+    return {
+        bindTo: 'data-style:',
+        expressions: $elem => {
+            const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).map(key => $elem.dataset[key]);
+            return expressions;
+        },
+        onChange($elem, result, { property }) {
+            $elem.style[property] = result;
+        },
+    }
+});
+
+directive(function classXyz() {
+    return {
+        bindTo: 'data-class:',
+        expressions: $elem => {
+            const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).map(key => {
+                return {
+                    expression: $elem.dataset[key],
+                    classname: key.replace('class:', '')
+                }
+            });
+            return expressions;
+        },
+        onChange($elem, result, { property, value, expression }) {
+            if (result)
+                $elem.classList.add(expression.classname)
+            else
+                $elem.classList.remove(expression.classname);
+        },
+    }
+});
+
 directive(function dataClass() {
     return {
         bindTo: 'data-class',
@@ -189,40 +225,6 @@ directive(function dataStyle() {
     }
 });
 
-directive(function styleXyz() {
-    return {
-        bindTo: 'data-style:',
-        expressions: $elem => {
-            const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('style:')).map(key => $elem.dataset[key]);
-            return expressions;
-        },
-        onChange($elem, result, { property }) {
-            $elem.style[property] = result;
-        },
-    }
-});
-
-directive(function classXyz() {
-    return {
-        bindTo: 'data-class:',
-        expressions: $elem => {
-            const expressions = Object.keys($elem.dataset).filter(key => key.startsWith('class:')).map(key => {
-                return {
-                    expression: $elem.dataset[key],
-                    classname: key.replace('class:', '')
-                }
-            });
-            return expressions;
-        },
-        onChange($elem, result, { property, value, expression }) {
-            if (result)
-                $elem.classList.add(expression.classname)
-            else
-                $elem.classList.remove(expression.classname);
-        },
-    }
-});
-
 directive(function dataShow() {
     return {
         bindTo: 'data-show',
@@ -241,7 +243,7 @@ directive(function addDataModelEvents() {
             if (!$elem.dataset.model)
                 return;
 
-            const isCheckbox = $elem.tagName == 'input' && $elem.getAttribute('type') == 'checkbox';
+            const isCheckbox = $elem.tagName == 'INPUT' && $elem.getAttribute('type') == 'checkbox';
 
             if (isCheckbox) {
                 $elem.addEventListener('change', function() {

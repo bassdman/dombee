@@ -109,8 +109,21 @@ function toFn(text, expressionTypes, values) {
     throw new Error(`Expression "${text}" can not be parsed.`);
 }
 
-function DombeeModel(data = {}, config = {}) {
+class DombeeModel {
+    constructor(data, config) {
+        this.state = init(data, config);
+    }
 
+    get values() {
+        return values(this.state);
+    }
+
+    get valuesStringified() {
+        return values(this.state, 'stringified');
+    }
+}
+
+function init(data = {}, config = {}) {
     throwErrorIf(typeof data != 'object' || Array.isArray(data), `Error in DombeeModel(data,config): data is typeof${typeof data} but must be an object`, 'datainvalid:noobject');
 
     const dependencyEvaluationStrategy = config.dependencyEvaluationStrategy || dependencyEvaluationStrategyDefault;
@@ -136,13 +149,13 @@ function DombeeModel(data = {}, config = {}) {
             return true;
         },
         get(target, key) {
-            /*      if (key == 'isProxy')
-                      return true;
-                  const prop = target[key];
-                  if (typeof prop == 'undefined')
-                      return;
-                  if (!prop.isProxy && typeof prop === 'object')
-                      target[key] = new Proxy(prop, proxyConfig);*/
+            if (key == 'isProxy')
+                return true;
+            const prop = target[key];
+            if (typeof prop == 'undefined')
+                return;
+            if (!prop.isProxy && typeof prop === 'object')
+                target[key] = new Proxy(prop, proxyConfig);
             return target[key];
         }
     };
@@ -165,6 +178,33 @@ function DombeeModel(data = {}, config = {}) {
     });
 
     return state;
+}
+
+function values(state, stringified) {
+    const retObj = {};
+
+    Object.keys(state).forEach(key => {
+        let value = state[key];
+        let valueText = value;
+
+        if (typeof value == 'function') {
+            value = value(state);
+            valueText = value;
+        }
+
+        if (value == null)
+            valueText = "''";
+
+        if (typeof value == 'string' && stringified)
+            valueText = `'${value}'`;
+
+        if (typeof value == 'object' && stringified)
+            valueText = JSON.stringify(value);
+
+        retObj[key] = valueText;
+    });
+
+    return retObj;
 }
 
 function randomId(prefix = "") {
@@ -267,7 +307,7 @@ function Dombee(config) {
     const render = (state, prop, value) => {
         function compile(code = "", cacheKey, expressionTypes) {
             const cacheId = cacheKey || code.toString();
-            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), values(), values('parsable')));
+            return renderResultCache(cacheId, () => compute(code, expressionTypes.map(exType => { return { key: exType, fn: globalCache.expressionTypes[exType] } }), dm.values, dm.valuesStringified));
         }
         const toUpdate = cache.dependencies[prop] || [];
 
@@ -277,14 +317,15 @@ function Dombee(config) {
             const result = compile(cacheUpdateEntry.resultFn, cacheUpdateEntry.expression, cacheUpdateEntry.expressionTypes);
 
             if (cacheUpdateEntry.onChange)
-                cacheUpdateEntry.onChange($elem, result, { values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
+                cacheUpdateEntry.onChange($elem, result, { values: dm.values, property: prop, value, expression: cacheUpdateEntry.expression, $root, compile });
         }
     };
 
-    const state = DombeeModel(config.data, {
+    const dm = new DombeeModel(config.data, {
         beforeChange() { renderResultCache.reset(); },
         onChange: render,
     });
+    const state = dm.state;
 
     for (let onload of globalCache.events.onload) {
         onload({ cache, state, $root });
@@ -337,33 +378,6 @@ function Dombee(config) {
             }
         }    }
 
-    function values(parsable) {
-        const retObj = {};
-
-        Object.keys(state).forEach(key => {
-            let value = state[key];
-            let valueText = value;
-
-            if (typeof value == 'function') {
-                value = value(state);
-                valueText = value;
-            }
-
-            if (value == null)
-                valueText = "''";
-
-            if (typeof value == 'string' && parsable)
-                valueText = `'${value}'`;
-
-            if (typeof value == 'object' && parsable)
-                valueText = JSON.stringify(value);
-
-            retObj[key] = valueText;
-        });
-
-        return retObj;
-    }
-
     function watch(key, fn) {
     }
 
@@ -388,7 +402,7 @@ function Dombee(config) {
     }
 
     for (let directiveConfig of globalCache.directives) {
-        const directive = createDirective(directiveConfig, { $root, state, values });
+        const directive = createDirective(directiveConfig, { $root, state, dm });
         const key = directive.bindTo.toLowerCase();
 
         if (!globalCache.directivesObj[key])
@@ -403,7 +417,7 @@ function Dombee(config) {
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
             if (directive.onElemLoad)
-                directive.onElemLoad($elem, { directive, state, values: values() });
+                directive.onElemLoad($elem, { directive, state, values: dm.values });
 
             let expressions = directive.expressions($elem);
 
@@ -455,7 +469,7 @@ function Dombee(config) {
 
     return {
         state,
-        values: values(),
+        values: dm.values,
         watch,
         cache,
         $root

@@ -1,8 +1,21 @@
 import { dependencyEvaluationStrategyDefault } from "../defaults.js";
 import { throwErrorIf } from '../helpers/throwError';
 
-export function DombeeModel(data = {}, config = {}) {
+export class DombeeModel {
+    constructor(data, config) {
+        this.state = init(data, config);
+    }
 
+    get values() {
+        return values(this.state);
+    }
+
+    get valuesStringified() {
+        return values(this.state, 'stringified');
+    }
+}
+
+function init(data = {}, config = {}) {
     throwErrorIf(typeof data != 'object' || Array.isArray(data), `Error in DombeeModel(data,config): data is typeof${typeof data} but must be an object`, 'datainvalid:noobject')
 
     const dependencyEvaluationStrategy = config.dependencyEvaluationStrategy || dependencyEvaluationStrategyDefault;
@@ -28,13 +41,13 @@ export function DombeeModel(data = {}, config = {}) {
             return true;
         },
         get(target, key) {
-            /*      if (key == 'isProxy')
-                      return true;
-                  const prop = target[key];
-                  if (typeof prop == 'undefined')
-                      return;
-                  if (!prop.isProxy && typeof prop === 'object')
-                      target[key] = new Proxy(prop, proxyConfig);*/
+            if (key == 'isProxy')
+                return true;
+            const prop = target[key];
+            if (typeof prop == 'undefined')
+                return;
+            if (!prop.isProxy && typeof prop === 'object')
+                target[key] = new Proxy(prop, proxyConfig);
             return target[key];
         }
     };
@@ -57,4 +70,31 @@ export function DombeeModel(data = {}, config = {}) {
     });
 
     return state;
+}
+
+function values(state, stringified) {
+    const retObj = {};
+
+    Object.keys(state).forEach(key => {
+        let value = state[key];
+        let valueText = value;
+
+        if (typeof value == 'function') {
+            value = value(state);
+            valueText = value;
+        }
+
+        if (value == null)
+            valueText = "''";
+
+        if (typeof value == 'string' && stringified)
+            valueText = `'${value}'`;
+
+        if (typeof value == 'object' && stringified)
+            valueText = JSON.stringify(value);
+
+        retObj[key] = valueText;
+    });
+
+    return retObj;
 }

@@ -96,7 +96,7 @@ describe("Dombee-binding", function() {
             expect(onChangeNested).toHaveBeenCalledTimes(1);
         });
 
-        it("should call onChangeNested 2x if data={level1:{level2:true}} and level1.level2 changed after init", function() {
+        xit("should call onChangeNested 2x if data={level1:{level2:true}} and level1.level2 changed after init", function() {
             const Dombee = getDombeeCoreInstance('<div id="renderTo"><p data-test="level1.level2">name</p></div>');
             const onChangeNested = jasmine.createSpy('onChangeA');
 
