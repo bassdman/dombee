@@ -39,10 +39,11 @@
             <h2 data-html="title"></h2>
             <h2 data-html="thing" data-class="{abc:yesno}" data-style="{opacity: opacity + '%'}"></h2>
             <h3 data-show="yesno" data-class="abc def ${classnames}" data-class:xyz="yesno" data-style="margin-left: ${margin}px;" data-style:opacity="${opacity}%">Wird nur bedingt angezeigt</h3>
-            <div data-html="nested.nested2"></div>
-        </div>
+            <div>Nested Element:
+                <!--<input data-model="nested.nested2.nested_3">{{nested.nested2.nested3}}, <span data-text="nested.nested2.nested3"></span></div>-->
+            </div>
 
-        <h3 data-class:xyz="yesno" data-class:abc="opacity == 0">Doubleclassbinding</h3>
+            <h3 data-class:xyz="yesno" data-class:abc="opacity == 0">Doubleclassbinding</h3>
     </main>
 
     <script type="module">
@@ -60,7 +61,9 @@
                     nachname: 'Hauen<b>stein</b>',
                     margin: 0,
                     nested: {
-                        nested2: false
+                        nested2: {
+                            nested3: 'nested_3'
+                        }
                     },
                     opacity(state) {
                         return 100 - state.margin;

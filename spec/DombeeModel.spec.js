@@ -38,10 +38,14 @@ describe("DombeeModel", function() {
             name: 'abc',
             age: 23,
             computed(state) { return state.age + state.age },
+            bool: true,
+            numberNull: 0,
             nested: {
                 nested_l2: {
                     nested_l3: 5,
-                    nested_l3_2: 15
+                    nested_l3_2: 15,
+                    nested_l3_bool: true,
+                    nestet_l3_null: 0
                 }
             },
             computedWithNested(state) { return nested.nested_l2.nested_l3 * 2 }
@@ -68,6 +72,12 @@ describe("DombeeModel", function() {
             dm.state.name = 'def';
 
             expect(onChange).toHaveBeenCalledWith(data, 'name', 'def');
+        });
+
+        it("should call onChange with params {name:'def'},'name','def'", function() {
+            dm.state.bool = false;
+
+            expect(onChange).toHaveBeenCalledWith(data, 'bool', false);
         });
 
         it("should call onChange 1x if dm.age changed due to dependency of computed fn", function() {

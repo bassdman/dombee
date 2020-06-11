@@ -167,12 +167,12 @@ function init(data = {}, config = {}) {
         },
         get(target, key) {
             let value = target[key];
-            if (value) {
+            if (value !== undefined) {
                 if (typeof value === 'object') {
                     value.__rootKey = getRootKey(target.__rootKey, key);
                     return new Proxy(value, proxyConfig)
                 }
-                return value
+                return value;
             }
             return new Proxy({}, proxyConfig)
         }
@@ -348,10 +348,9 @@ function Dombee(config) {
         beforeChange() { renderResultCache.reset(); },
         onChange: render,
     });
-    const state = dm.state;
 
     for (let onload of globalCache.events.onload) {
-        onload({ cache, state, $root });
+        onload({ cache, state: dm.state, $root });
     }
 
     function initConfig(config = {}) {
@@ -377,7 +376,7 @@ function Dombee(config) {
     function addDependencies(expressionResult = "", name, directive = {}, $elem) {
         const fnText = expressionResult.expression ? expressionResult.expression.toString() : expressionResult.toString();
 
-        const dependencies = globalCache.dependencyEvaluationStrategy(fnText, state);
+        const dependencies = globalCache.dependencyEvaluationStrategy(fnText, dm.state);
         const expressionTypes = getExpressionTypes(directive);
         const matchid = randomId('id');
 
@@ -425,7 +424,7 @@ function Dombee(config) {
     }
 
     for (let directiveConfig of globalCache.directives) {
-        const directive = createDirective(directiveConfig, { $root, state, dm });
+        const directive = createDirective(directiveConfig, { $root, state: dm.state, dm });
         const key = directive.bindTo.toLowerCase();
 
         if (!globalCache.directivesObj[key])
@@ -440,7 +439,7 @@ function Dombee(config) {
         const elementDirectives = getDirectivesFromCache('*');
         for (let directive of elementDirectives) {
             if (directive.onElemLoad)
-                directive.onElemLoad($elem, { directive, state, values: dm.values });
+                directive.onElemLoad($elem, { directive, state: dm.state, values: dm.values });
 
             let expressions = directive.expressions($elem);
 
@@ -482,21 +481,17 @@ function Dombee(config) {
 
     function renderRecursive(obj) {
         Object.keys(obj).forEach(key => {
-            render(state, key, obj[key]);
+            render(dm.state, key, obj[key]);
         });
     }
 
-    renderRecursive(state);
+    renderRecursive(dm.state);
 
+    dm.cache = cache;
+    dm.$root = $root;
+    dm.watch = watch;
 
-
-    return {
-        state,
-        values: dm.values,
-        watch,
-        cache,
-        $root
-    }
+    return dm;
 }
 
 function dependencyEvaluationStrategy(fn) {

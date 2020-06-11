@@ -44,12 +44,12 @@ function init(data = {}, config = {}) {
         },
         get(target, key) {
             let value = target[key]
-            if (value) {
+            if (value !== undefined) {
                 if (typeof value === 'object') {
                     value.__rootKey = getRootKey(target.__rootKey, key);
                     return new Proxy(value, proxyConfig)
                 }
-                return value
+                return value;
             }
             return new Proxy({}, proxyConfig)
         }
